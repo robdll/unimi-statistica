@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>L03 · Dati e frequenze — Interactive Learning</title>
-  <meta name="description" content="Tipi di dati, frequenze assolute/relative/cumulate, istogrammi, diagrammi di Pareto e frequenze congiunte." />
+  <meta name="description" content="Tipi di dati, frequenze assolute/relative/cumulate, indici di posizione (moda, mediana, media campionaria), istogrammi, diagrammi di Pareto e frequenze congiunte." />
   <link rel="stylesheet" href="assets/styles.css" />
   <script>
     window.MathJax = {
@@ -43,10 +43,18 @@
           </ul>
         </li>
         <li><a href="#sec-cum">4. Frequenze cumulate &amp; ECDF</a></li>
-        <li><a href="#sec-pareto">5. Diagrammi di Pareto</a></li>
-        <li><a href="#sec-congiunte">6. Frequenze congiunte e marginali</a></li>
-        <li><a href="#sec-scatter">7. Scatter, covarianza e correlazione</a></li>
-        <li><a href="#sec-finale">8. Riepilogo &amp; sfida finale</a></li>
+        <li><a href="#sec-centr">5. Indici di posizione (centralità)</a>
+          <ul class="toc-sub">
+            <li><a href="#sec-moda">5.1 Moda</a></li>
+            <li><a href="#sec-mediana">5.2 Mediana campionaria</a></li>
+            <li><a href="#sec-media">5.3 Media campionaria</a></li>
+            <li><a href="#sec-confronto">5.4 Media vs mediana</a></li>
+          </ul>
+        </li>
+        <li><a href="#sec-pareto">6. Diagrammi di Pareto</a></li>
+        <li><a href="#sec-congiunte">7. Frequenze congiunte e marginali</a></li>
+        <li><a href="#sec-scatter">8. Scatter, covarianza e correlazione</a></li>
+        <li><a href="#sec-finale">9. Riepilogo &amp; sfida finale</a></li>
       </ul>
     </aside>
 
@@ -59,15 +67,17 @@
       <section class="hero">
         <h1>L03 · Dati e frequenze</h1>
         <p>
-          Prima di calcolare medie e deviazioni standard, bisogna capire <em>che tipo di
-          dati</em> stiamo trattando e come <em>contare</em> in modo strutturato. In questa
-          lezione: classificazione dei caratteri, frequenze (assolute, relative, cumulate,
-          congiunte), istogrammi, Pareto e diagrammi di dispersione.
+          Prima di calcolare deviazioni standard e modelli, bisogna capire <em>che tipo di
+          dati</em> stiamo trattando, come <em>contare</em> in modo strutturato e come
+          riassumere una distribuzione in pochi numeri. In questa lezione: classificazione
+          dei caratteri, frequenze (assolute, relative, cumulate, congiunte), <strong>indici
+          di posizione</strong> (moda, mediana, media campionaria), istogrammi, Pareto e
+          diagrammi di dispersione.
         </p>
         <div class="meta">
-          <span>≈ 50–70 minuti</span>
-          <span>10 quiz</span>
-          <span>5 esercizi</span>
+          <span>≈ 60–80 minuti</span>
+          <span>12 quiz</span>
+          <span>7 esercizi</span>
           <span>Tante visualizzazioni</span>
         </div>
         <div class="progress-wrap" title="Progresso quiz">
@@ -630,9 +640,359 @@ plt.show()
         </div>
       </section>
 
-      <!-- ============== 5. PARETO ============== -->
+      <!-- ============== 5. CENTRALITÀ ============== -->
+      <section id="sec-centr">
+        <h2 class="section-title">5. Indici di posizione (centralità)</h2>
+        <p>
+          Una tabella di frequenze descrive «com'è fatto» il campione, ma a volte ci
+          serve un <em>singolo numero</em> che ne riassuma la collocazione tipica: dove
+          «cade», in media, il valore di un eroe? Si chiamano <strong>indici di
+          posizione</strong> (o di <em>centralità</em>) e sono il primo strumento di
+          sintesi statistica. I tre principali sono <strong>moda</strong>,
+          <strong>mediana</strong> e <strong>media campionaria</strong>; ciascuno si
+          applica a tipi di dato diversi e ha caratteristiche di robustezza diverse.
+        </p>
+
+        <div class="callout info">
+          <strong>Quale indice per quale dato?</strong>
+          <ul style="margin: 6px 0 0;">
+            <li>Qualitativo nominale (es. <code>Eye color</code>): <em>solo moda</em>;</li>
+            <li>Qualitativo ordinale (es. <code>Intelligence</code>): moda e mediana;</li>
+            <li>Quantitativo (es. <code>Weight</code>): tutti e tre.</li>
+          </ul>
+        </div>
+
+        <!-- ---------- 5.1 MODA ---------- -->
+        <h3 id="sec-moda">5.1 Moda</h3>
+        <p>
+          La <strong>moda</strong> è il valore (o la classe, per dati continui raggruppati
+          in bin) con frequenza massima. È l'unico indice di posizione utilizzabile su
+          dati <em>qualitativi nominali</em>, perché non richiede né ordine né somme.
+        </p>
+        <ul>
+          <li>può <strong>non essere unica</strong>: una distribuzione si dice
+            <em>bimodale</em> se ha due valori a pari frequenza massima,
+            <em>multimodale</em> se sono di più;</li>
+          <li>su dati continui dipende dai <strong>bin</strong> scelti per
+            l'istogramma: bin diversi possono dare mode diverse.</li>
+        </ul>
+
+        <p>In pandas si trova con <code>.mode()</code> (restituisce una Series perché
+          potrebbero esserci più mode):</p>
+
+<pre data-runnable data-pandas="true" data-title="moda.py" data-lang="python">import pandas as pd
+
+occhi = pd.Series(
+    ['Blue','Blue','Blue','Blue','Green','Green','Green',
+     'Brown','Hazel','Grey','Blue','Blue'],
+    name='Eye color'
+)
+print("Frequenze:")
+print(occhi.value_counts())
+print()
+print("Moda:")
+print(occhi.mode().tolist())
+</pre>
+
+        <!-- ---------- 5.2 MEDIANA ---------- -->
+        <h3 id="sec-mediana">5.2 Mediana campionaria</h3>
+        <p>
+          La <strong>mediana</strong> di un campione ordinabile è un valore che lascia
+          <em>almeno metà</em> delle osservazioni a sinistra e <em>almeno metà</em> a
+          destra. Detto in altri termini: è il più piccolo valore \(m\) per cui la ECDF
+          empirica vale almeno \(0{,}5\),
+        </p>
+        <p>\[ m = \min\{\, x : \hat F(x) \ge 0{,}5 \,\}. \]</p>
+
+        <p>Se ordiniamo il campione \(x_{(1)} \le x_{(2)} \le \dots \le x_{(n)}\):</p>
+        <ul>
+          <li>se \(n\) è <strong>dispari</strong>, la mediana è il valore centrale
+            \(x_{((n+1)/2)}\);</li>
+          <li>se \(n\) è <strong>pari</strong>, per convenzione si prende la media
+            aritmetica dei due valori centrali:
+            \( (x_{(n/2)} + x_{(n/2 + 1)})/2 \).</li>
+        </ul>
+
+        <div class="callout tip">
+          <strong>Perché è robusta.</strong> La mediana dipende solo dall'<em>ordine</em>
+          delle osservazioni, non dai loro valori numerici precisi. Se sostituisci il
+          massimo del campione con un numero enorme, la mediana non cambia. Per questo
+          motivo è preferibile alla media quando ci sono <em>outlier</em> o code lunghe.
+        </div>
+
+<pre data-runnable data-pandas="true" data-title="mediana.py" data-lang="python">import pandas as pd
+
+pesi = pd.Series([74.74, 58.96, 95.78, 191.85, 107.62,
+                  72.97, 135.21, 79.85, 87.55, 81.46])
+print(f"Ordinati: {sorted(pesi)}")
+print(f"n = {len(pesi)} (pari) → mediana = media dei due centrali")
+print(f"Mediana (pandas):  {pesi.median():.2f}")
+
+# Aggiungo Hulk: outlier estremo che NON sposta la mediana
+pesi_outlier = pd.concat([pesi, pd.Series([630.32])], ignore_index=True)
+print(f"\nCon Hulk (peso 630.32):")
+print(f"Mediana:  {pesi_outlier.median():.2f}   (quasi invariata)")
+print(f"Media:    {pesi_outlier.mean():.2f}    (sale parecchio!)")
+</pre>
+
+        <!-- ---------- 5.3 MEDIA ---------- -->
+        <h3 id="sec-media">5.3 Media campionaria</h3>
+        <p>
+          La <strong>media campionaria</strong> (o media aritmetica) di un campione
+          quantitativo \(x_1, \dots, x_n\) è
+        </p>
+        <p>\[ \bar x = \frac{1}{n}\sum_{i=1}^n x_i. \]</p>
+
+        <p>
+          Si chiama «campionaria» per distinguerla dalla media teorica della popolazione
+          (di solito indicata con \(\mu\)): \(\bar x\) è un numero calcolato sui dati che
+          abbiamo, mentre \(\mu\) è la quantità che ci interessa <em>stimare</em>. Al
+          crescere di \(n\) ci aspettiamo che \(\bar x\) si avvicini a \(\mu\) (è
+          l'intuizione dietro la legge dei grandi numeri, che vedremo più avanti).
+        </p>
+
+        <p>
+          Se nel campione ci sono \(k\) valori distinti \(v_1, \dots, v_k\) con
+          frequenze assolute \(n_1, \dots, n_k\) (e quindi frequenze relative
+          \(f_j = n_j / n\)), la media si può riscrivere come <em>somma pesata</em>
+          dalle frequenze:
+        </p>
+        <p>\[ \bar x \;=\; \frac{1}{n}\sum_{j=1}^k n_j \, v_j \;=\; \sum_{j=1}^k f_j \, v_j. \]</p>
+
+        <p>
+          È la stessa formula che si usa per calcolare la media a partire da una
+          <em>tabella di frequenze</em> già pronta. Su dati raggruppati in classi
+          (istogramma), si approssima sostituendo a \(v_j\) il valore centrale del
+          \(j\)-esimo bin.
+        </p>
+
+        <div class="callout warning">
+          <strong>Sensibile agli outlier.</strong> A differenza della mediana, la media
+          tiene conto del <em>valore</em> di ogni osservazione: anche un solo Hulk può
+          spostarla parecchio. È un'ottima sintesi se la distribuzione è grosso modo
+          simmetrica e senza code lunghe; in caso contrario può fuorviare.
+        </div>
+
+<pre data-runnable data-pandas="true" data-title="media_campionaria.py" data-lang="python">import pandas as pd
+
+# 12 valori di Strength
+strength = pd.Series([85, 100, 26, 100, 100, 55, 75, 30, 100, 13, 19, 10])
+
+n = len(strength)
+print(f"n = {n}")
+print(f"Somma:   {strength.sum()}")
+print(f"Media:   {strength.mean():.3f}  (= somma / n)")
+
+# Stessa cosa "a mano" dalla tabella delle frequenze relative
+freq_rel = strength.value_counts(normalize=True)
+media_da_freq = (freq_rel.index * freq_rel.values).sum()
+print(f"\nMedia ricalcolata dalle frequenze relative: {media_da_freq:.3f}")
+print("\nTabella delle frequenze relative:")
+print(freq_rel.sort_index().round(3))
+</pre>
+
+        <!-- ---------- 5.4 CONFRONTO ---------- -->
+        <h3 id="sec-confronto">5.4 Media vs mediana: cosa ci dice la loro distanza</h3>
+        <p>
+          Confrontare media e mediana è un trucchetto rapido per «sentire» la forma di
+          una distribuzione, senza disegnare nulla:
+        </p>
+        <ul>
+          <li>se \(\bar x \approx \mathrm{med}(x)\): distribuzione <em>simmetrica</em>;</li>
+          <li>se \(\bar x &gt; \mathrm{med}(x)\): coda lunga <em>a destra</em> (alcuni
+            valori grandi tirano su la media; <em>skew</em> positivo);</li>
+          <li>se \(\bar x &lt; \mathrm{med}(x)\): coda lunga <em>a sinistra</em>
+            (skew negativo).</li>
+        </ul>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="media_vs_mediana.py" data-lang="python">import pandas as pd, numpy as np
+import matplotlib.pyplot as plt
+
+rng = np.random.default_rng(7)
+simm  = pd.Series(rng.normal(loc=170, scale=10, size=300))   # ~ simmetrica
+skew  = pd.Series(rng.exponential(scale=80, size=300) + 60)  # coda a destra
+
+for nome, s in [("Simmetrica", simm), ("Asimmetrica (coda dx)", skew)]:
+    print(f"{nome:25s}  media = {s.mean():6.2f}   mediana = {s.median():6.2f}   diff = {s.mean()-s.median():+.2f}")
+
+fig, axes = plt.subplots(1, 2, figsize=(9, 3.2))
+for ax, (nome, s) in zip(axes, [("Simmetrica", simm), ("Asimmetrica", skew)]):
+    s.hist(bins=25, ax=ax, color='#3b82f6', alpha=.7)
+    ax.axvline(s.mean(),   color='#ef4444', linewidth=2, label=f"media = {s.mean():.1f}")
+    ax.axvline(s.median(), color='#22c55e', linewidth=2, linestyle='--', label=f"mediana = {s.median():.1f}")
+    ax.set_title(nome); ax.legend(fontsize=8)
+plt.tight_layout(); plt.show()
+</pre>
+
+        <p>
+          C'è anche un metodo unico che fa tutto in una riga: <code>describe()</code>
+          su una Series numerica restituisce media, deviazione standard, minimo,
+          quartili e massimo. Lo riprenderemo nella lezione successiva, quando
+          parleremo di indici di dispersione.
+        </p>
+
+        <div class="quiz" data-id="q-centr-1">
+          <h4>Su un campione di 21 supereroi con un valore di forza pari a
+            <code>1000</code> (chiaro outlier), quale indice di posizione viene
+            <strong>meno</strong> influenzato dall'outlier?</h4>
+          <ul class="quiz-options">
+            <li>Media campionaria.</li>
+            <li data-correct>Mediana.</li>
+            <li>Sono entrambi influenzati allo stesso modo.</li>
+            <li>Dipende dalla deviazione standard.</li>
+          </ul>
+          <div class="quiz-explain">
+            La media usa la <em>somma</em> di tutti i valori e quindi «sente» anche un
+            singolo outlier estremo. La mediana usa solo l'<em>ordinamento</em>:
+            sostituire il massimo con 1000 o con \(10^{10}\) non cambia la posizione
+            centrale, quindi non cambia la mediana.
+          </div>
+        </div>
+
+        <div class="quiz" data-id="q-centr-2">
+          <h4>Per il carattere <code>Eye color</code> (qualitativo nominale), quali
+            indici di posizione hanno senso?</h4>
+          <ul class="quiz-options">
+            <li>Media, mediana e moda.</li>
+            <li>Media e mediana.</li>
+            <li>Mediana e moda.</li>
+            <li data-correct>Solo la moda.</li>
+          </ul>
+          <div class="quiz-explain">
+            La media richiede di sommare i valori (servono i numeri); la mediana
+            richiede di ordinarli (serve una relazione d'ordine). Per
+            <code>Eye color</code> non c'è né l'una né l'altra: si può solo dire
+            quale colore è il più frequente, cioè la moda.
+          </div>
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 2 — Carta e penna · Moda, mediana e media a mano</h4>
+          <p>
+            Un piccolo gruppo di supereroi ha i seguenti indici di forza:
+          </p>
+          <p>\[ 13,\; 19,\; 26,\; 26,\; 55,\; 55,\; 75,\; 85,\; 100,\; 100,\; 100. \]</p>
+          <ol>
+            <li>Calcola la <strong>moda</strong>.</li>
+            <li>Calcola la <strong>mediana</strong> (n è dispari, quindi è il valore
+              centrale dopo l'ordinamento).</li>
+            <li>Calcola la <strong>media campionaria</strong> \(\bar x\).</li>
+            <li>Confronta media e mediana: di che tipo di asimmetria si tratta?</li>
+          </ol>
+          <p class="hint">
+            Suggerimento: i dati sono già ordinati. Per la media puoi usare la
+            riscrittura con le frequenze, raggruppando i valori uguali.
+          </p>
+
+          <div class="solution">
+            <p><strong>Soluzione.</strong></p>
+            <ol>
+              <li><em>Moda</em>: il valore con più ripetizioni è <code>100</code>
+                (compare 3 volte). Quindi <strong>moda = 100</strong>.</li>
+              <li><em>Mediana</em>: \(n = 11\), dispari. Il valore centrale è il
+                \(((n+1)/2) = 6^\circ\) elemento dell'ordinamento. Contando:
+                \(x_{(6)} = 55\). Quindi <strong>mediana = 55</strong>.</li>
+              <li><em>Media</em>: usando la riscrittura con frequenze assolute,
+                \[
+                  \bar x \;=\; \frac{1}{11}\,(13 + 19 + 2\cdot 26 + 2\cdot 55 + 75 + 85 + 3\cdot 100)
+                  \;=\; \frac{1}{11}\cdot 654 \;\approx\; 59{,}45.
+                \]
+                Quindi <strong>media ≈ 59,45</strong>.</li>
+              <li><em>Confronto</em>: \(\bar x \approx 59{,}45 &gt; 55 = \mathrm{med}(x)\).
+                La media è più grande della mediana → <strong>coda lunga a destra</strong>
+                (skew positivo): i tre eroi con forza 100 «tirano su» la media.</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 3 — Indici di posizione sul dataset</h4>
+          <p>
+            Sul CSV qui sotto: (a) stampa moda, mediana e media campionaria della colonna
+            <code>Weight</code>; (b) calcola la <em>differenza</em> media − mediana e dì
+            che tipo di asimmetria suggerisce; (c) trova la moda della colonna
+            <code>Eye color</code> (qualitativa).
+          </p>
+          <p class="hint">
+            Suggerimento: per (a) usa <code>.mode()</code>, <code>.median()</code> e
+            <code>.mean()</code>. Per dati continui la moda «pura» dipende dai duplicati
+            esatti, quindi potrebbe non essere molto informativa: dichiaralo nel
+            commento.
+          </p>
+
+<pre data-runnable data-pandas="true" data-title="esercizio_centralita.py" data-lang="python">CSV = """\
+Name;Eye color;Weight
+Iron Man;Blue;191.85
+Hulk;Green;630.32
+Batman;Blue;95.78
+Superman;Blue;107.62
+Wonder Woman;Blue;74.74
+Spider-Man;Hazel;72.97
+Wolverine;Blue;135.21
+Storm;Blue;58.96
+Thor;Blue;291.45
+Black Widow;Green;58.39
+Captain America;Blue;108.10
+Joker;Green;79.85
+Aquaman;Blue;146.96
+Catwoman;Green;57.34
+Flash;Green;90.74
+Cyborg;Brown;176.32
+Venom;Blue;162.46
+Doctor Strange;Grey;81.46
+Magneto;Blue;87.55
+Penguin;Blue;79.43
+"""
+import pandas as pd, io
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+# Tua soluzione qui
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-pandas="true" data-title="soluzione_centralita.py" data-lang="python">CSV = """\
+Name;Eye color;Weight
+Iron Man;Blue;191.85
+Hulk;Green;630.32
+Batman;Blue;95.78
+Superman;Blue;107.62
+Wonder Woman;Blue;74.74
+Spider-Man;Hazel;72.97
+Wolverine;Blue;135.21
+Storm;Blue;58.96
+Thor;Blue;291.45
+Black Widow;Green;58.39
+Captain America;Blue;108.10
+Joker;Green;79.85
+Aquaman;Blue;146.96
+Catwoman;Green;57.34
+Flash;Green;90.74
+Cyborg;Brown;176.32
+Venom;Blue;162.46
+Doctor Strange;Grey;81.46
+Magneto;Blue;87.55
+Penguin;Blue;79.43
+"""
+import pandas as pd, io
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+
+w = df['Weight']
+print(f"Weight  -  media:   {w.mean():.2f}")
+print(f"Weight  -  mediana: {w.median():.2f}")
+print(f"Weight  -  moda:    {w.mode().tolist()}  (poco informativa: pesi quasi tutti unici)")
+print(f"Weight  -  media - mediana = {w.mean() - w.median():+.2f}")
+print("  → media &gt; mediana: distribuzione con coda lunga a destra (skew positivo).")
+print("    Coerente con Hulk e Thor che 'tirano' la media verso l'alto.")
+
+print(f"\nEye color (qualitativa) - moda: {df['Eye color'].mode().tolist()}")
+</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 6. PARETO ============== -->
       <section id="sec-pareto">
-        <h2 class="section-title">5. Diagrammi di Pareto</h2>
+        <h2 class="section-title">6. Diagrammi di Pareto</h2>
         <p>
           Un <strong>diagramma di Pareto</strong> combina barre (frequenze in ordine
           decrescente) e una linea spezzata che mostra le frequenze cumulate. È il
@@ -693,7 +1053,7 @@ print(f"\nIl primo colore che porta la cumulata sopra l'80% è: {soglia} ({cum.l
         </div>
 
         <div class="exercise">
-          <h4>Esercizio 2 — Diagramma di Pareto sugli editori</h4>
+          <h4>Esercizio 4 — Diagramma di Pareto sugli editori</h4>
           <p>
             Disegna il diagramma di Pareto sui <code>Publisher</code> del CSV qui sotto.
             Stampa anche quanti editori bastano a coprire almeno il 90% dei supereroi.
@@ -780,9 +1140,9 @@ print(f"Servono {n_per_90} editori per coprire almeno il 90% del campione.")
         </div>
       </section>
 
-      <!-- ============== 6. CONGIUNTE ============== -->
+      <!-- ============== 7. CONGIUNTE ============== -->
       <section id="sec-congiunte">
-        <h2 class="section-title">6. Frequenze congiunte e marginali</h2>
+        <h2 class="section-title">7. Frequenze congiunte e marginali</h2>
         <p>
           Quando consideriamo <strong>due caratteri</strong> insieme, la frequenza
           diventa <em>congiunta</em>: conta gli individui per ogni coppia di valori. La
@@ -919,9 +1279,9 @@ print(pd.crosstab(
         </div>
       </section>
 
-      <!-- ============== 7. SCATTER ============== -->
+      <!-- ============== 8. SCATTER ============== -->
       <section id="sec-scatter">
-        <h2 class="section-title">7. Scatter, covarianza e correlazione</h2>
+        <h2 class="section-title">8. Scatter, covarianza e correlazione</h2>
         <p>
           Quando entrambi i caratteri sono <em>numerici</em>, lo strumento giusto è il
           <strong>diagramma di dispersione</strong> (<em>scatter plot</em>): ogni
@@ -1005,7 +1365,7 @@ print(f"Correlazione (Pearson): {corr:.3f}")
         </div>
 
         <div class="exercise">
-          <h4>Esercizio 3 — Correlazione Marvel vs DC</h4>
+          <h4>Esercizio 5 — Correlazione Marvel vs DC</h4>
           <p>
             Calcola separatamente la correlazione tra <code>Height</code> e
             <code>Weight</code> per gli eroi Marvel e per quelli DC. È più alta in un
@@ -1085,7 +1445,7 @@ for pub in ['Marvel Comics', 'DC Comics']:
         </div>
 
         <div class="exercise">
-          <h4>Esercizio 4 — Frequenze congiunte e barre raggruppate</h4>
+          <h4>Esercizio 6 — Frequenze congiunte e barre raggruppate</h4>
           <p>
             Costruisci la tabella di contingenza tra <code>Publisher</code> e bin di
             altezza (≤ 180, 180–200, &gt; 200) e disegnala come barre raggruppate.
@@ -1157,15 +1517,16 @@ plt.show()
         </div>
       </section>
 
-      <!-- ============== 8. RIEPILOGO ============== -->
+      <!-- ============== 9. RIEPILOGO ============== -->
       <section id="sec-finale">
-        <h2 class="section-title">8. Riepilogo &amp; sfida finale</h2>
+        <h2 class="section-title">9. Riepilogo &amp; sfida finale</h2>
         <p>Idee da portare via:</p>
         <ul>
-          <li><strong>Tipi di dato</strong>: qualitativi (binari, nominali, ordinali) vs quantitativi (discreti, continui) → guida la scelta del grafico.</li>
+          <li><strong>Tipi di dato</strong>: qualitativi (binari, nominali, ordinali) vs quantitativi (discreti, continui) → guida la scelta del grafico e degli indici.</li>
           <li><strong>Frequenze</strong>: <code>value_counts</code> e <code>pd.crosstab</code>; sempre meglio <em>relative</em> per confronti tra campioni.</li>
           <li><strong>Visualizzazioni</strong>: barre per qualitativi; bastoncini per discreti; istogrammi per continui; pie per quote; Pareto per «80/20».</li>
           <li><strong>Cumulate</strong> ed <strong>ECDF</strong>: utili per rispondere a domande del tipo «quanti ≤ x?».</li>
+          <li><strong>Indici di posizione</strong>: moda (ogni tipo di dato), mediana (ordinabili, <em>robusta</em>), media campionaria \(\bar x = \tfrac{1}{n}\sum x_i\) (solo quantitativi, <em>sensibile agli outlier</em>); media vs mediana segnalano la simmetria della distribuzione.</li>
           <li><strong>Frequenze congiunte</strong>: <code>pd.crosstab(idx, cols, normalize='columns')</code> per confrontare sotto-popolazioni.</li>
           <li><strong>Scatter + Pearson</strong>: la correlazione vive in <code>[-1, 1]</code>; misura solo l'andamento <em>lineare</em>.</li>
         </ul>
@@ -1195,6 +1556,23 @@ plt.show()
             <li>ogni <em>colonna</em> somma a 1.</li>
             <li>la diagonale principale somma a 1.</li>
           </ul>
+        </div>
+
+        <div class="quiz" data-id="q-final-3">
+          <h4>Su un campione di pesi di supereroi la media vale 130 kg e la mediana
+            85 kg. Cosa puoi dedurre sulla forma della distribuzione?</h4>
+          <ul class="quiz-options">
+            <li>È circa simmetrica.</li>
+            <li>Ha coda lunga a sinistra (skew negativo).</li>
+            <li data-correct>Ha coda lunga a destra (skew positivo): pochi valori
+              molto grandi alzano la media.</li>
+            <li>I dati hanno necessariamente un outlier sbagliato da scartare.</li>
+          </ul>
+          <div class="quiz-explain">
+            \(\bar x &gt; \mathrm{med}(x)\) è il sintomo classico di una coda lunga a
+            destra. Non significa che ci sia per forza un errore: distribuzioni come
+            quella del peso o del reddito sono naturalmente asimmetriche.
+          </div>
         </div>
 
         <div class="exercise">
