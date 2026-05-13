@@ -498,6 +498,21 @@ sys.stderr = sys.__stderr__
     onScroll();
   }
 
+  /* ---------------- Sidebar toggles ---------------- */
+
+  /* Pulsanti `.toc-toggle` collassano/aprono il sotto-elenco indicato da
+     `aria-controls`. Idempotente: se non ci sono toggle, non fa nulla. */
+  function setupTocToggles() {
+    $$('.toc-toggle').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const expanded = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', String(!expanded));
+        const sub = document.getElementById(btn.getAttribute('aria-controls'));
+        if (sub) sub.hidden = expanded;
+      });
+    });
+  }
+
   /* ---------------- Init ---------------- */
 
   function init() {
@@ -506,6 +521,7 @@ sys.stderr = sys.__stderr__
     $$('.exercise').forEach(buildExercise);
     setupTheme();
     setupScrollSpy();
+    setupTocToggles();
     progress.init();
   }
 
