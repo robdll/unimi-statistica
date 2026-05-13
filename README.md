@@ -50,7 +50,7 @@ Click destro su `index.html` → *Open with Live Server*.
 | ID    | Titolo                                  | Stato            |
 |-------|-----------------------------------------|------------------|
 | L01   | Introduzione a Python                   | ✅ Disponibile    |
-| L02   | Pandas e DataFrame                      | 🚧 In arrivo     |
+| L02   | Pandas: Series &amp; DataFrame          | ✅ Disponibile    |
 | L03   | Statistica descrittiva                  | 🚧 In arrivo     |
 | L09   | Calcolo combinatorio                    | 🚧 In arrivo     |
 

@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L02 · Pandas — Interactive Learning</title>
+  <meta name="description" content="Versione interattiva della Lezione 2 di Superhero Data Science: Series, indicizzazione, operazioni vettoriali, plotting e DataFrame con pandas." />
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+
+    <!-- ================== SIDEBAR ================== -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">SD</div>
+        <div>
+          <strong>Lezione 02</strong>
+          <small>Pandas: Series &amp; DataFrame</small>
+        </div>
+      </div>
+
+      <p style="margin: 0 0 8px;">
+        <a href="index.html" style="font-size:0.85rem;">← Torna all'indice</a>
+      </p>
+
+      <h2>In questa lezione</h2>
+      <ul class="toc">
+        <li><a href="#sec-intro">1. Perché pandas</a></li>
+        <li><a href="#sec-setup">2. Setup &amp; dataset</a></li>
+        <li><a href="#sec-series">3. Le Series</a>
+          <ul class="toc-sub">
+            <li><a href="#sec-creazione">3.1 Creazione</a></li>
+            <li><a href="#sec-accesso">3.2 Accesso (loc / iloc)</a></li>
+            <li><a href="#sec-slicing">3.3 Slicing</a></li>
+            <li><a href="#sec-multi">3.4 Accesso multiplo</a></li>
+            <li><a href="#sec-query">3.5 Query booleane</a></li>
+          </ul>
+        </li>
+        <li><a href="#sec-counts">4. value_counts &amp; sort_index</a></li>
+        <li><a href="#sec-plot">5. Visualizzare una Series</a></li>
+        <li><a href="#sec-ops">6. Operazioni sulle Series</a>
+          <ul class="toc-sub">
+            <li><a href="#sec-vector">6.1 Aritmetica vettoriale</a></li>
+            <li><a href="#sec-apply">6.2 apply &amp; lambda</a></li>
+            <li><a href="#sec-allineamento">6.3 Allineamento per indice</a></li>
+          </ul>
+        </li>
+        <li><a href="#sec-df">7. I DataFrame</a>
+          <ul class="toc-sub">
+            <li><a href="#sec-df-create">7.1 Creazione &amp; read_csv</a></li>
+            <li><a href="#sec-df-cols">7.2 Selezionare colonne e righe</a></li>
+            <li><a href="#sec-df-filter">7.3 Filtri sui DataFrame</a></li>
+          </ul>
+        </li>
+        <li><a href="#sec-finale">8. Riepilogo &amp; sfida finale</a></li>
+      </ul>
+    </aside>
+
+    <!-- ================== MAIN ================== -->
+    <main class="main">
+
+      <div class="theme-toggle">
+        <button class="btn ghost" type="button">🌙 Tema scuro</button>
+      </div>
+
+      <!-- ============== HERO ============== -->
+      <section class="hero">
+        <h1>L02 · Pandas — Series &amp; DataFrame</h1>
+        <p>
+          Da puro Python a pandas: come una sola libreria semplifica enormemente le
+          operazioni di caricamento, indicizzazione, filtraggio e visualizzazione dei
+          dati. Lavoreremo su un sottoinsieme reale del dataset dei supereroi.
+        </p>
+        <div class="meta">
+          <span>≈ 45–60 minuti</span>
+          <span>10 quiz</span>
+          <span>5 esercizi</span>
+          <span>Dati reali</span>
+        </div>
+        <div class="progress-wrap" title="Progresso quiz">
+          <div class="progress-bar"></div>
+        </div>
+      </section>
+
+      <!-- ============== 1. INTRO ============== -->
+      <section id="sec-intro">
+        <h2 class="section-title">1. Perché pandas</h2>
+        <p>
+          Nella <a href="lezione-01.html">Lezione 1</a> abbiamo visto come gestire dati con
+          liste, dizionari, list comprehension e <code>numpy</code>. Funziona, ma per
+          dataset di centinaia o migliaia di righe diventa rapidamente verboso. La libreria
+          <strong>pandas</strong> introduce due strutture dati pensate apposta:
+        </p>
+        <ul>
+          <li><strong>Series</strong> — un vettore di osservazioni di un singolo carattere, con
+            un <em>indice</em> che identifica ciascun elemento;</li>
+          <li><strong>DataFrame</strong> — una collezione di Series con lo stesso indice: in
+            pratica, una <em>tabella</em> in cui ogni colonna è una variabile e ogni riga
+            un'unità statistica.</li>
+        </ul>
+        <p>
+          La convenzione di import è (rispettala!):
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="versioni.py" data-lang="python">import pandas as pd
+import numpy as np
+
+print("pandas:", pd.__version__)
+print("numpy :", np.__version__)
+</pre>
+
+        <div class="callout warning">
+          <strong>Primo run più lento.</strong> La cella qui sopra scarica
+          <code>pandas</code> (e le sue dipendenze) nel browser via Pyodide: la prima
+          esecuzione può richiedere qualche decina di secondi. Le successive sono istantanee.
+        </div>
+      </section>
+
+      <!-- ============== 2. SETUP ============== -->
+      <section id="sec-setup">
+        <h2 class="section-title">2. Setup: il nostro dataset</h2>
+        <p>
+          Per non dipendere da file esterni, in tutti i blocchi di questa lezione partiamo
+          da un piccolo dataset di supereroi <em>incorporato come stringa</em>. Esegui la
+          cella seguente <strong>una volta</strong>: definisce la variabile <code>HEROES_CSV</code>
+          che useremo nelle celle successive.
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="dataset.py" data-lang="python">HEROES_CSV = """\
+Name;Identity;Birth place;Publisher;Height;Weight;Gender;First appearance;Eye color;Hair color;Strength;Intelligence
+A-Bomb;Richard Milhouse Jones;Scarsdale, Arizona;Marvel Comics;203.21;441.95;M;2008;Yellow;No Hair;100;moderate
+Abe Sapien;Abraham Sapien;;Dark Horse Comics;191.24;65.35;M;1993;Blue;No Hair;30;high
+Abomination;Emil Blonsky;Zagreb, Yugoslavia;Marvel Comics;203.04;441.98;M;;Green;No Hair;80;good
+Abraxas;Abraxas;Within Eternity;Marvel Comics;;;M;;Blue;Black;100;high
+Adam Strange;Adam Strange;Chicago, Illinois;DC Comics;185.10;88.92;M;1986;Blue;Blond;10;good
+Alfred Pennyworth;Alfred Thaddeus Crane Pennyworth;;DC Comics;178.26;72.98;M;1943;Blue;Black;10;good
+Alien;Xenomorph;Your chest :);Dark Horse Comics;244.30;169.66;M;1979;;No Hair;30;average
+Ant-Man;Hank Pym;Elmsford, New York;Marvel Comics;211.74;122.44;M;1962;Blue;Blond;20;high
+Aquaman;Orin;Atlantis;DC Comics;185.71;146.96;M;1941;Blue;Blond;85;high
+Batman;Bruce Wayne;Crest Hill, Bristol Township, Gotham County;DC Comics;188.04;95.78;M;1939;Blue;Black;10;good
+Beast;Henry Philip McCoy;Dunfee, Illinois;Marvel Comics;180.27;181.14;M;1963;Blue;Blue;80;high
+Black Panther;T'Challa;Wakanda;Marvel Comics;183.42;90.61;M;1966;Brown;Black;30;good
+Black Widow;Natalia Romanova;Stalingrad, Russia;Marvel Comics;170.29;58.94;F;1964;Green;Auburn;15;good
+Captain America;Steven Rogers;Manhattan, New York City, New York;Marvel Comics;188.06;108.10;M;1941;Blue;Blond;25;good
+Captain Marvel;Carol Danvers;Boston, Massachusetts;Marvel Comics;180.56;54.75;F;1968;Blue;Blond;100;good
+Catwoman;Selina Kyle;Gotham City;DC Comics;170.58;57.34;F;1940;Green;Black;10;good
+Cyclops;Scott Summers;Anchorage, Alaska;Marvel Comics;191.55;90.97;M;1963;Brown;Brown;15;good
+Daredevil;Matthew Michael Murdock;New York City, New York;Marvel Comics;185.65;90.59;M;1964;Blue;Auburn;15;good
+Deadpool;Wade Wilson;Canada;Marvel Comics;188.18;95.20;M;1991;Brown;No Hair;25;average
+Doctor Strange;Stephen Vincent Strange;Philadelphia, Pennsylvania;Marvel Comics;188.94;81.72;M;1963;Grey;Black;10;high
+Elektra;Elektra Natchios;Greece;Marvel Comics;173.27;58.83;F;1981;Blue;Black;15;good
+Flash;Jay Garrick;Fallville, Iowa;DC Comics;185.36;90.74;M;1940;Blue;Blond;15;good
+Gamora;Gamora;;Marvel Comics;183.92;76.44;F;1975;Yellow;Black;55;good
+Green Arrow;Oliver Queen;Star City;DC Comics;188.48;90.64;M;1941;Green;Blond;15;good
+Green Lantern;Hal Jordan;Coast City, California;DC Comics;185.81;90.10;M;1959;Brown;Brown;90;good
+Groot;Groot;Planet X;Marvel Comics;213.09;381.07;M;1960;Yellow;No Hair;85;average
+Hawkeye;Clint Barton;Waverly, Iowa;Marvel Comics;191.34;104.09;M;1964;Blue;Blond;15;good
+Hulk;Bruce Banner;Dayton, Ohio;Marvel Comics;244.50;630.32;M;1962;Green;Green;100;high
+Iron Man;Tony Stark;Long Island, New York;Marvel Comics;198.51;191.85;M;1963;Blue;Black;85;high
+Joker;Joker;;DC Comics;195.50;86.37;M;1940;Green;Green;10;good
+Loki;Loki Laufeyson;Jotunheim;Marvel Comics;191.30;236.48;M;1962;Blue;Black;75;high
+Magneto;Max Eisenhardt;Nuremberg, Germany;Marvel Comics;188.17;86.40;M;1963;Grey;Grey;60;high
+Mystique;Raven Darkholme;;Marvel Comics;178.52;54.92;F;1978;Yellow;Red;10;good
+Nick Fury;Nicholas Joseph Fury;New York City, New York;Marvel Comics;185.95;104.00;M;1963;Brown;No Hair;15;good
+Professor X;Charles Francis Xavier;New York City, New York;Marvel Comics;183.16;86.36;M;1963;Blue;No Hair;10;high
+Rogue;Anna Marie;Caldecott County, Mississippi;Marvel Comics;173.10;54.39;F;1981;Green;Brown / White;10;good
+Spider-Man;Peter Parker;New York, New York;Marvel Comics;177.95;72.97;M;1962;Hazel;Brown;55;good
+Storm;Ororo Munroe;Manhattan, New York City;Marvel Comics;180.39;58.96;F;1975;Blue;White;30;good
+Superman;Clark Kent;Krypton;DC Comics;191.10;107.62;M;1938;Blue;Black;100;high
+Thor;Thor Odinson;Asgard;Marvel Comics;198.10;291.45;M;1962;Blue;Blond;100;good
+Wolverine;Logan;Alberta, Canada;Marvel Comics;160.70;135.21;M;1974;Blue;Black;35;good
+Wonder Woman;Diana Prince;Themyscira;DC Comics;183.13;74.74;F;1941;Blue;Black;100;high
+"""
+
+import pandas as pd
+import io
+
+heroes_df = pd.read_csv(io.StringIO(HEROES_CSV), sep=';', index_col='Name')
+print(f"Caricati {len(heroes_df)} supereroi")
+print(heroes_df.columns.tolist())
+</pre>
+
+        <div class="callout info">
+          <strong>Suggerimento.</strong> Le celle in questa lezione sono <em>indipendenti</em>:
+          ognuna ridefinisce <code>HEROES_CSV</code> e <code>heroes_df</code>. Così puoi
+          aprire una sezione qualsiasi senza dover rieseguire tutte le precedenti.
+        </div>
+      </section>
+
+      <!-- ============== 3. SERIES ============== -->
+      <section id="sec-series">
+        <h2 class="section-title">3. Le Series</h2>
+        <p>
+          Una <code>Series</code> è una sequenza di osservazioni omogenee con un
+          <em>indice</em> che etichetta ciascun elemento. Pensala come un dizionario
+          ordinato in cui le chiavi formano l'indice e i valori sono il "vettore"
+          su cui si possono fare operazioni.
+        </p>
+
+        <h3 id="sec-creazione">3.1 Creazione di una Series</h3>
+        <p>
+          Si costruisce passando al costruttore <code>pd.Series(...)</code> una lista (o
+          tupla) di valori e, opzionalmente, un indice. Senza indice esplicito viene usato
+          un indice numerico <code>0, 1, 2, …</code>.
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="series_basics.py" data-lang="python">import pandas as pd
+
+# Series con indice numerico (default)
+s = pd.Series([10, 20, 30, 40])
+print(s)
+print()
+
+# Series con indice esplicito
+voti = pd.Series([28, 30, 25, 27], index=['Alice', 'Bob', 'Charlie', 'Diana'])
+print(voti)
+print()
+print("Tipo di valori:", voti.dtype)
+</pre>
+
+        <p>
+          Nel libro si costruisce una serie con anno di prima apparizione di ogni eroe,
+          usando il <em>nome</em> come indice. Replichiamolo dal nostro dataset:
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="first_appearance.py" data-lang="python">HEROES_CSV = """\
+Name;First appearance
+Iron Man;1963
+Spider-Man;1962
+Wonder Woman;1941
+Hulk;1962
+Batman;1939
+Superman;1938
+Aquaman;1941
+Mystique;1978
+Storm;1975
+Wolverine;1974
+"""
+import pandas as pd, io
+df = pd.read_csv(io.StringIO(HEROES_CSV), sep=';', index_col='Name')
+first_appearance = df['First appearance']
+
+print(first_appearance)
+print()
+print("dtype:", first_appearance.dtype)
+print("Numero di osservazioni:", len(first_appearance))
+</pre>
+
+        <div class="callout info">
+          <strong>NaN e dtype.</strong> Se tra i valori ci sono "buchi" (campi vuoti nel CSV),
+          pandas li rappresenta come <code>NaN</code> (<em>not a number</em>) e – per poter
+          ospitare i NaN – converte il tipo a <code>float64</code>, anche se i numeri
+          erano interi. Lo vedremo nella prossima sezione.
+        </div>
+
+        <h3 id="sec-accesso">3.2 Accesso per indice (<code>loc</code>) e per posizione (<code>iloc</code>)</h3>
+        <p>
+          Pandas distingue chiaramente tra accesso <em>per etichetta</em> (l'indice) e
+          accesso <em>per posizione</em>:
+        </p>
+        <ul>
+          <li><code>s.loc['etichetta']</code> &mdash; accesso per indice;</li>
+          <li><code>s.iloc[3]</code> &mdash; accesso per posizione (parte da 0, come nelle liste).</li>
+        </ul>
+
+<pre data-runnable data-pandas="true" data-title="loc_iloc.py" data-lang="python">import pandas as pd
+
+voti = pd.Series([28, 30, 25, 27], index=['Alice', 'Bob', 'Charlie', 'Diana'])
+
+# Per indice
+print("Voto di Bob:", voti.loc['Bob'])
+print("Voto di Bob (forma corta):", voti['Bob'])
+
+# Per posizione
+print("Terzo voto:", voti.iloc[2])
+print("Ultimo voto:", voti.iloc[-1])
+</pre>
+
+        <div class="callout warning">
+          <strong>Attenzione quando l'indice è numerico.</strong> Se l'indice contiene
+          numeri, scrivere <code>s[3]</code> consulta l'<em>indice</em>, non la posizione,
+          e può confondere. Per evitare ambiguità usa esplicitamente <code>.loc</code> o
+          <code>.iloc</code>.
+        </div>
+
+        <div class="quiz" data-id="q-locioloc">
+          <h4>Data <code>s = pd.Series([10, 20, 30], index=['a', 'b', 'c'])</code>,
+            quale espressione restituisce il valore <code>30</code>?</h4>
+          <ul class="quiz-options">
+            <li><code>s.loc[2]</code></li>
+            <li><code>s['c'][0]</code></li>
+            <li data-correct><code>s.iloc[-1]</code></li>
+            <li><code>s.last()</code></li>
+          </ul>
+          <div class="quiz-explain">
+            <code>iloc[-1]</code> accede all'ultima posizione (qui il <code>30</code>).
+            <code>loc[2]</code> tenterebbe l'etichetta <code>2</code>, che non esiste.
+          </div>
+        </div>
+
+        <h3 id="sec-slicing">3.3 Slicing su Series</h3>
+        <p>
+          Si può fare slicing sia per indice che per posizione. C'è una differenza importante:
+        </p>
+        <ul>
+          <li>slicing <strong>per indice</strong> (con <code>.loc</code>): l'estremo finale è <strong>incluso</strong>;</li>
+          <li>slicing <strong>per posizione</strong> (con <code>.iloc</code>): l'estremo finale è <strong>escluso</strong> (come nelle liste Python).</li>
+        </ul>
+
+<pre data-runnable data-pandas="true" data-title="slicing.py" data-lang="python">import pandas as pd
+
+voti = pd.Series([28, 30, 25, 27, 22, 29],
+                 index=['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank'])
+
+print("Per indice (estremi inclusi):")
+print(voti.loc['Bob':'Diana'])
+print()
+
+print("Per posizione (estremo escluso):")
+print(voti.iloc[1:3])     # solo Bob e Charlie
+</pre>
+
+        <div class="quiz" data-id="q-slicing">
+          <h4>Data la serie <code>voti</code> dell'esempio sopra, quanti elementi
+            restituisce <code>voti.loc['Bob':'Diana']</code>?</h4>
+          <ul class="quiz-options">
+            <li>2 (Bob, Charlie)</li>
+            <li data-correct>3 (Bob, Charlie, Diana)</li>
+            <li>4 (Alice, Bob, Charlie, Diana)</li>
+            <li>Errore: lo slicing per stringhe non è supportato</li>
+          </ul>
+          <div class="quiz-explain">
+            Con <code>.loc</code> lo slicing per etichetta è inclusivo su entrambi gli
+            estremi. Con <code>.iloc</code>, invece, l'estremo finale è escluso (come
+            nelle liste Python).
+          </div>
+        </div>
+
+        <h3 id="sec-multi">3.4 Accesso multiplo: liste di etichette o di posizioni</h3>
+        <p>
+          Si può passare una <em>lista</em> di etichette (o di posizioni) per estrarre
+          più elementi in un colpo solo. Il risultato è ancora una Series:
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="multi_index.py" data-lang="python">import pandas as pd
+
+voti = pd.Series([28, 30, 25, 27, 22, 29],
+                 index=['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank'])
+
+# Lista di etichette
+print("Solo alcuni studenti:")
+print(voti.loc[['Alice', 'Diana', 'Frank']])
+print()
+
+# Lista di posizioni
+print("Posizioni 0, 2, 4:")
+print(voti.iloc[[0, 2, 4]])
+</pre>
+
+        <h3 id="sec-query">3.5 Query booleane</h3>
+        <p>
+          Il modo più "pandas" di filtrare è confrontare la serie con un valore: si ottiene
+          una Series di booleani che si può usare per indicizzare quella di partenza. Questa
+          è probabilmente la singola caratteristica più potente di pandas.
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="query.py" data-lang="python">import pandas as pd
+
+voti = pd.Series([28, 30, 25, 27, 22, 29],
+                 index=['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank'])
+
+# Step 1: confronto = Series di booleani
+mask = voti &gt;= 28
+print("Maschera booleana:")
+print(mask)
+print()
+
+# Step 2: usiamo la maschera per filtrare
+print("Solo i voti alti:")
+print(voti[mask])
+print()
+
+# In una sola riga (più pythonico):
+print("Compatto:", voti[voti &gt;= 28].tolist())
+</pre>
+
+        <p>
+          Si possono combinare più condizioni con <code>&amp;</code> (and) e <code>|</code>
+          (or). Attenzione: <strong>servono le parentesi</strong> attorno a ogni condizione,
+          perché la precedenza degli operatori è diversa da quella di <code>and</code>/<code>or</code>.
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="query_and.py" data-lang="python">import pandas as pd
+
+voti = pd.Series([28, 30, 25, 27, 22, 29],
+                 index=['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank'])
+
+# Voti tra 26 e 29 (compresi)
+print(voti[(voti &gt;= 26) &amp; (voti &lt;= 29)])
+</pre>
+
+        <div class="exercise">
+          <h4>Esercizio 1 — Eroi alti</h4>
+          <p>
+            Dato il dataset completo, costruisci la serie <code>height</code> (colonna
+            <code>'Height'</code>) e stampa <em>solo i nomi</em> degli eroi più alti di
+            <strong>200 cm</strong>, in ordine alfabetico.
+          </p>
+          <p class="hint">
+            Suggerimento: dopo aver ottenuto la serie filtrata, l'attributo <code>.index</code>
+            contiene l'indice (cioè i nomi). Ordinarlo è facile con <code>sorted(...)</code>.
+          </p>
+
+<pre data-runnable data-pandas="true" data-title="esercizio1.py" data-lang="python">HEROES_CSV = """\
+Name;Height
+A-Bomb;203.21
+Aquaman;185.71
+Batman;188.04
+Hulk;244.50
+Iron Man;198.51
+Superman;191.10
+Thor;198.10
+Wolverine;160.70
+Wonder Woman;183.13
+Groot;213.09
+Alien;244.30
+Ant-Man;211.74
+"""
+import pandas as pd, io
+df = pd.read_csv(io.StringIO(HEROES_CSV), sep=';', index_col='Name')
+height = df['Height']
+
+# Tua soluzione qui sotto
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-pandas="true" data-title="soluzione1.py" data-lang="python">HEROES_CSV = """\
+Name;Height
+A-Bomb;203.21
+Aquaman;185.71
+Batman;188.04
+Hulk;244.50
+Iron Man;198.51
+Superman;191.10
+Thor;198.10
+Wolverine;160.70
+Wonder Woman;183.13
+Groot;213.09
+Alien;244.30
+Ant-Man;211.74
+"""
+import pandas as pd, io
+df = pd.read_csv(io.StringIO(HEROES_CSV), sep=';', index_col='Name')
+height = df['Height']
+
+alti = height[height &gt; 200]
+print(sorted(alti.index))
+</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 4. value_counts ============== -->
+      <section id="sec-counts">
+        <h2 class="section-title">4. <code>value_counts</code> e <code>sort_index</code></h2>
+        <p>
+          Calcolare le frequenze assolute era, in puro Python, una decina di righe di
+          codice (<code>defaultdict</code>, ciclo <code>for</code>…). In pandas è una
+          singola chiamata: il metodo <code>value_counts()</code> restituisce una nuova
+          Series in cui le chiavi sono i valori distinti e i valori sono le frequenze,
+          ordinate dalla più alta alla più bassa. I <code>NaN</code> sono esclusi
+          automaticamente.
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="value_counts.py" data-lang="python">import pandas as pd
+
+publishers = pd.Series(['Marvel', 'DC', 'Marvel', 'Marvel',
+                        'Image', 'DC', 'Marvel', None, 'DC'])
+
+print(publishers.value_counts())
+print()
+print("Quanti editori distinti?", publishers.nunique())
+</pre>
+
+        <p>
+          Spesso vogliamo riordinare il risultato per <em>chiave</em> invece che per
+          frequenza: ad esempio per visualizzare un grafico cronologico. Lo fa
+          <code>sort_index()</code>:
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="sort_index.py" data-lang="python">HEROES_CSV = """\
+Name;First appearance
+Iron Man;1963
+Spider-Man;1962
+Hulk;1962
+Batman;1939
+Superman;1938
+Aquaman;1941
+Wonder Woman;1941
+Wolverine;1974
+Storm;1975
+Groot;1960
+Beast;1963
+Hawkeye;1964
+Daredevil;1964
+Captain America;1941
+"""
+import pandas as pd, io
+df = pd.read_csv(io.StringIO(HEROES_CSV), sep=';', index_col='Name')
+years = df['First appearance']
+
+freq = years.value_counts().sort_index()
+print(freq)
+</pre>
+
+        <div class="callout tip">
+          <strong>Bonus: filtrare gli outlier.</strong> Pandas permette di concatenare
+          operazioni in modo molto leggibile: <code>years[years &lt; 2090].value_counts().sort_index()</code>
+          esclude eventuali anni "fuori scala" e poi calcola le frequenze ordinate.
+        </div>
+
+        <div class="quiz" data-id="q-vc">
+          <h4>Cosa restituisce <code>value_counts()</code>?</h4>
+          <ul class="quiz-options">
+            <li>Un dizionario <code>{valore: conteggio}</code>.</li>
+            <li data-correct>Una nuova Series con i valori come indice e i conteggi come valori, ordinata in senso decrescente.</li>
+            <li>Una lista di tuple <code>(valore, conteggio)</code>.</li>
+            <li>Sempre una Series ordinata per chiave crescente.</li>
+          </ul>
+          <div class="quiz-explain">
+            È una Series ordinata <em>per frequenza decrescente</em> per default. Se vuoi
+            l'ordinamento per chiave, concatena <code>.sort_index()</code>.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 5. PLOT ============== -->
+      <section id="sec-plot">
+        <h2 class="section-title">5. Visualizzare una Series</h2>
+        <p>
+          Ogni Series espone un attributo <code>.plot</code> che fa da scorciatoia per
+          matplotlib. Per un istogramma di frequenze va benissimo
+          <code>.plot.bar()</code>, ma con tante categorie le etichette finiscono per
+          accavallarsi. La soluzione più "pulita" è usare direttamente <code>plt.bar</code>
+          passandogli <code>indice</code> e <code>valori</code> della serie:
+        </p>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="plot_bar.py" data-lang="python">HEROES_CSV = """\
+Name;First appearance
+Iron Man;1963
+Spider-Man;1962
+Hulk;1962
+Batman;1939
+Superman;1938
+Aquaman;1941
+Wonder Woman;1941
+Wolverine;1974
+Storm;1975
+Groot;1960
+Beast;1963
+Hawkeye;1964
+Daredevil;1964
+Captain America;1941
+Magneto;1963
+Cyclops;1963
+Loki;1962
+Black Widow;1964
+Green Lantern;1959
+Catwoman;1940
+Joker;1940
+Flash;1940
+Wonder Woman;1941
+"""
+import pandas as pd, io
+import matplotlib.pyplot as plt
+
+df = pd.read_csv(io.StringIO(HEROES_CSV), sep=';', index_col='Name')
+freq = df['First appearance'].value_counts().sort_index()
+
+plt.figure(figsize=(7, 3))
+plt.bar(freq.index, freq.values, color="#4f8cff")
+plt.title("Prime apparizioni — frequenze assolute")
+plt.xlabel("Anno")
+plt.ylabel("# supereroi")
+plt.show()
+</pre>
+
+        <div class="callout info">
+          <strong>Nota:</strong> abbiamo usato <code>freq.index</code> e <code>freq.values</code>.
+          <code>index</code> è una sequenza pandas, <code>values</code> è il sottostante
+          array NumPy: insieme sono perfetti per <code>plt.bar(x, y)</code>.
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 2 — Editori</h4>
+          <p>
+            A partire dal dataset principale, calcola le frequenze degli editori
+            (colonna <code>'Publisher'</code>) e visualizzale con un grafico a barre
+            <em>orizzontale</em> (<code>plt.barh</code>) dal più frequente al meno
+            frequente.
+          </p>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="esercizio2.py" data-lang="python">HEROES_CSV = """\
+Name;Publisher
+Iron Man;Marvel Comics
+Hulk;Marvel Comics
+Spider-Man;Marvel Comics
+Batman;DC Comics
+Superman;DC Comics
+Wonder Woman;DC Comics
+Aquaman;DC Comics
+Flash;DC Comics
+Catwoman;DC Comics
+Joker;DC Comics
+Wolverine;Marvel Comics
+Storm;Marvel Comics
+Captain America;Marvel Comics
+Thor;Marvel Comics
+Loki;Marvel Comics
+Magneto;Marvel Comics
+Cyclops;Marvel Comics
+Hawkeye;Marvel Comics
+Daredevil;Marvel Comics
+Black Widow;Marvel Comics
+Alien;Dark Horse Comics
+Abe Sapien;Dark Horse Comics
+Yoda;George Lucas
+"""
+import pandas as pd, io
+import matplotlib.pyplot as plt
+
+df = pd.read_csv(io.StringIO(HEROES_CSV), sep=';', index_col='Name')
+publisher = df['Publisher']
+
+# Tua soluzione qui sotto
+# freq = ...
+# plt.barh(...)
+# plt.show()
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="soluzione2.py" data-lang="python">HEROES_CSV = """\
+Name;Publisher
+Iron Man;Marvel Comics
+Hulk;Marvel Comics
+Spider-Man;Marvel Comics
+Batman;DC Comics
+Superman;DC Comics
+Wonder Woman;DC Comics
+Aquaman;DC Comics
+Flash;DC Comics
+Catwoman;DC Comics
+Joker;DC Comics
+Wolverine;Marvel Comics
+Storm;Marvel Comics
+Captain America;Marvel Comics
+Thor;Marvel Comics
+Loki;Marvel Comics
+Magneto;Marvel Comics
+Cyclops;Marvel Comics
+Hawkeye;Marvel Comics
+Daredevil;Marvel Comics
+Black Widow;Marvel Comics
+Alien;Dark Horse Comics
+Abe Sapien;Dark Horse Comics
+Yoda;George Lucas
+"""
+import pandas as pd, io
+import matplotlib.pyplot as plt
+
+df = pd.read_csv(io.StringIO(HEROES_CSV), sep=';', index_col='Name')
+publisher = df['Publisher']
+
+freq = publisher.value_counts().sort_values()  # ascendente, così il più alto sta in alto
+plt.figure(figsize=(6, 3))
+plt.barh(freq.index, freq.values, color="#ffc857")
+plt.title("Supereroi per editore")
+plt.xlabel("# supereroi")
+plt.tight_layout()
+plt.show()
+</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 6. OPS ============== -->
+      <section id="sec-ops">
+        <h2 class="section-title">6. Operazioni sulle Series</h2>
+
+        <h3 id="sec-vector">6.1 Aritmetica vettoriale</h3>
+        <p>
+          Le operazioni aritmetiche sulle Series sono <em>vettorizzate</em>: si applicano
+          elemento per elemento. È molto più veloce (e leggibile) che scrivere un ciclo.
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="vector_ops.py" data-lang="python">import pandas as pd
+
+altezze_cm = pd.Series([198.51, 244.50, 188.04, 191.10, 160.70],
+                      index=['Iron Man', 'Hulk', 'Batman', 'Superman', 'Wolverine'])
+
+altezze_m = altezze_cm / 100
+print(altezze_m)
+print()
+
+# Operatore tra DUE Series, allineato per indice
+pesi_kg = pd.Series([191.85, 630.32, 95.78, 107.62, 135.21],
+                    index=['Iron Man', 'Hulk', 'Batman', 'Superman', 'Wolverine'])
+bmi = pesi_kg / (altezze_m ** 2)
+print("BMI:")
+print(bmi.round(1))
+</pre>
+
+        <p>
+          Tutti i confronti (<code>&gt;</code>, <code>==</code>, …) e le operazioni
+          aritmetiche restituiscono una nuova Series con lo stesso indice. È quello che
+          rende possibili le query booleane viste prima.
+        </p>
+
+        <h3 id="sec-apply">6.2 <code>apply</code> per trasformazioni più complesse</h3>
+        <p>
+          Quando l'operazione non si esprime con un solo operatore aritmetico, si può
+          usare <code>apply</code> passandogli una funzione (spesso una <code>lambda</code>):
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="apply.py" data-lang="python">import pandas as pd
+
+altezze_cm = pd.Series([198.51, 244.50, 188.04, 191.10, 160.70],
+                      index=['Iron Man', 'Hulk', 'Batman', 'Superman', 'Wolverine'])
+
+# Stesso effetto di (altezze_cm / 100) ** 2, ma con apply
+altezze_m_quadrato = altezze_cm.apply(lambda h: (h / 100) ** 2)
+print(altezze_m_quadrato.round(2))
+print()
+
+# apply con una funzione "vera"
+def categoria_altezza(h):
+    if h &lt; 170: return "basso"
+    if h &lt; 200: return "medio"
+    return "alto"
+
+print(altezze_cm.apply(categoria_altezza))
+</pre>
+
+        <h3 id="sec-allineamento">6.3 Allineamento per indice (importante!)</h3>
+        <p>
+          Quando combini due Series con un'operazione binaria, pandas <strong>allinea
+          per indice</strong>, non per posizione. Se un'etichetta esiste solo in una delle
+          due, il risultato corrispondente sarà <code>NaN</code>.
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="alignment.py" data-lang="python">import pandas as pd
+
+a = pd.Series([10, 20, 30], index=['x', 'y', 'z'])
+b = pd.Series([1,  2,  3 ], index=['y', 'z', 'w'])  # diverso!
+
+print("a:")
+print(a)
+print()
+print("b:")
+print(b)
+print()
+print("a + b (allineato per indice):")
+print(a + b)
+</pre>
+
+        <div class="callout warning">
+          <strong>Conseguenza pratica.</strong> Se filtri due Series in modo
+          <em>indipendente</em> (es. pesi plausibili e altezze plausibili) e poi le
+          combini, alcuni eroi finiranno con <code>NaN</code> perché un'etichetta è stata
+          esclusa da una sola delle due. Spesso conviene filtrare a livello di
+          <em>DataFrame</em> (vedi sezione 7).
+        </div>
+
+        <div class="quiz" data-id="q-align">
+          <h4>Date <code>a = pd.Series([10, 20], index=['x', 'y'])</code> e
+            <code>b = pd.Series([1, 2], index=['y', 'z'])</code>, quanti
+            <code>NaN</code> contiene <code>a + b</code>?</h4>
+          <ul class="quiz-options">
+            <li>0 (somma elemento per elemento)</li>
+            <li>1 (solo l'indice <code>z</code>)</li>
+            <li data-correct>2 (gli indici <code>x</code> e <code>z</code>)</li>
+            <li>3</li>
+          </ul>
+          <div class="quiz-explain">
+            <code>x</code> esiste solo in <code>a</code> e <code>z</code> solo in
+            <code>b</code>: la somma è definita solo per <code>y</code>. Risultato:
+            <code>{x: NaN, y: 22, z: NaN}</code>.
+          </div>
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 3 — BMI dei supereroi</h4>
+          <p>
+            Calcola il BMI per tutti gli eroi nel piccolo dataset qui sotto, e stampa
+            i 3 con il valore <em>più alto</em> (in ordine decrescente).
+          </p>
+          <p class="hint">
+            Suggerimenti: il metodo <code>sort_values(ascending=False)</code> ordina
+            una Series in modo decrescente; poi puoi prendere i primi 3 con
+            <code>.head(3)</code>.
+          </p>
+
+<pre data-runnable data-pandas="true" data-title="esercizio3.py" data-lang="python">HEROES_CSV = """\
+Name;Height;Weight
+Iron Man;198.51;191.85
+Hulk;244.50;630.32
+Batman;188.04;95.78
+Wolverine;160.70;135.21
+Wonder Woman;183.13;74.74
+Captain America;188.06;108.10
+Thor;198.10;291.45
+Spider-Man;177.95;72.97
+Storm;180.39;58.96
+Groot;213.09;381.07
+"""
+import pandas as pd, io
+df = pd.read_csv(io.StringIO(HEROES_CSV), sep=';', index_col='Name')
+height = df['Height']
+weight = df['Weight']
+
+# Tua soluzione qui sotto
+# bmi = ...
+# top3 = ...
+# print(top3)
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-pandas="true" data-title="soluzione3.py" data-lang="python">HEROES_CSV = """\
+Name;Height;Weight
+Iron Man;198.51;191.85
+Hulk;244.50;630.32
+Batman;188.04;95.78
+Wolverine;160.70;135.21
+Wonder Woman;183.13;74.74
+Captain America;188.06;108.10
+Thor;198.10;291.45
+Spider-Man;177.95;72.97
+Storm;180.39;58.96
+Groot;213.09;381.07
+"""
+import pandas as pd, io
+df = pd.read_csv(io.StringIO(HEROES_CSV), sep=';', index_col='Name')
+height = df['Height']
+weight = df['Weight']
+
+bmi = weight / (height / 100) ** 2
+top3 = bmi.sort_values(ascending=False).head(3)
+print(top3.round(1))
+</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 7. DATAFRAME ============== -->
+      <section id="sec-df">
+        <h2 class="section-title">7. I DataFrame</h2>
+        <p>
+          Un <code>DataFrame</code> è una <em>tabella</em>: si può vedere come una
+          collezione di Series con lo stesso indice. È la struttura che useremo
+          praticamente sempre da qui in poi.
+        </p>
+
+        <h3 id="sec-df-create">7.1 Creazione e <code>read_csv</code></h3>
+        <p>
+          Il modo più comune di creare un DataFrame è leggere un file CSV con
+          <code>pd.read_csv</code>. Si possono passare opzioni utili come
+          <code>sep</code> (separatore), <code>index_col</code> (colonna da usare come
+          indice di riga) e altre.
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="df_basics.py" data-lang="python">HEROES_CSV = """\
+Name;Publisher;Height;Weight;First appearance
+Iron Man;Marvel Comics;198.51;191.85;1963
+Hulk;Marvel Comics;244.50;630.32;1962
+Batman;DC Comics;188.04;95.78;1939
+Superman;DC Comics;191.10;107.62;1938
+Wonder Woman;DC Comics;183.13;74.74;1941
+Spider-Man;Marvel Comics;177.95;72.97;1962
+Wolverine;Marvel Comics;160.70;135.21;1974
+Storm;Marvel Comics;180.39;58.96;1975
+"""
+import pandas as pd, io
+
+heroes_df = pd.read_csv(io.StringIO(HEROES_CSV), sep=';', index_col='Name')
+
+print("Shape:", heroes_df.shape)        # (righe, colonne)
+print("Colonne:", list(heroes_df.columns))
+print()
+print("Prime righe:")
+print(heroes_df.head(3))
+print()
+print("Statistiche descrittive sulle colonne numeriche:")
+print(heroes_df.describe())
+</pre>
+
+        <h3 id="sec-df-cols">7.2 Selezionare colonne e righe</h3>
+        <p>
+          Per ottenere una <em>colonna</em> ci sono due notazioni equivalenti:
+          <code>df['nome_colonna']</code> oppure (se il nome è un identificatore valido)
+          <code>df.nome_colonna</code>. Per ottenere più colonne in un colpo solo, passa
+          una lista. Per le righe valgono <code>.loc</code> e <code>.iloc</code> visti per le Series.
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="df_select.py" data-lang="python">HEROES_CSV = """\
+Name;Publisher;Height;Weight
+Iron Man;Marvel Comics;198.51;191.85
+Hulk;Marvel Comics;244.50;630.32
+Batman;DC Comics;188.04;95.78
+Superman;DC Comics;191.10;107.62
+Wonder Woman;DC Comics;183.13;74.74
+"""
+import pandas as pd, io
+heroes_df = pd.read_csv(io.StringIO(HEROES_CSV), sep=';', index_col='Name')
+
+# Una sola colonna → Series
+print("Solo i pesi:")
+print(heroes_df['Weight'])
+print()
+
+# Più colonne → DataFrame
+print("Solo Height e Weight:")
+print(heroes_df[['Height', 'Weight']])
+print()
+
+# Una riga (per indice) → Series
+print("Iron Man:")
+print(heroes_df.loc['Iron Man'])
+print()
+
+# Una cella precisa
+print("Peso di Hulk:", heroes_df.loc['Hulk', 'Weight'])
+</pre>
+
+        <div class="quiz" data-id="q-df-cols">
+          <h4>Quale espressione restituisce un <em>DataFrame</em> (e non una Series)?</h4>
+          <ul class="quiz-options">
+            <li><code>heroes_df['Weight']</code></li>
+            <li><code>heroes_df.Weight</code></li>
+            <li data-correct><code>heroes_df[['Weight']]</code></li>
+            <li><code>heroes_df.loc['Iron Man']</code></li>
+          </ul>
+          <div class="quiz-explain">
+            Passando una <em>lista</em> di colonne (anche con un solo nome) si ottiene
+            sempre un DataFrame. Le altre espressioni producono Series.
+          </div>
+        </div>
+
+        <h3 id="sec-df-filter">7.3 Filtri sui DataFrame</h3>
+        <p>
+          Le query booleane funzionano anche sui DataFrame: si crea una maschera (di
+          solito a partire da una colonna) e la si usa per indicizzare l'intero DataFrame.
+          Il risultato è un <em>sotto-DataFrame</em> che mantiene tutte le colonne.
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="df_filter.py" data-lang="python">HEROES_CSV = """\
+Name;Publisher;Height;Weight
+Iron Man;Marvel Comics;198.51;191.85
+Hulk;Marvel Comics;244.50;630.32
+Batman;DC Comics;188.04;95.78
+Superman;DC Comics;191.10;107.62
+Wonder Woman;DC Comics;183.13;74.74
+Spider-Man;Marvel Comics;177.95;72.97
+Wolverine;Marvel Comics;160.70;135.21
+Storm;Marvel Comics;180.39;58.96
+"""
+import pandas as pd, io
+heroes_df = pd.read_csv(io.StringIO(HEROES_CSV), sep=';', index_col='Name')
+
+# Solo gli eroi Marvel
+marvel = heroes_df[heroes_df['Publisher'] == 'Marvel Comics']
+print("Marvel:")
+print(marvel)
+print()
+
+# Combinazione di condizioni — parentesi obbligatorie!
+alti_e_marvel = heroes_df[(heroes_df['Height'] &gt; 190) &amp;
+                          (heroes_df['Publisher'] == 'Marvel Comics')]
+print("Marvel sopra i 190 cm:")
+print(alti_e_marvel)
+</pre>
+
+        <div class="callout tip">
+          <strong>Filtraggio centralizzato.</strong> Filtrare a livello di DataFrame
+          (anziché applicare filtri indipendenti a Series separate) evita il problema
+          dell'allineamento per indice visto in 6.3: tutte le colonne vengono "tagliate"
+          in modo coerente.
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 4 — Eroi DC con BMI plausibile</h4>
+          <p>
+            Dato il DataFrame qui sotto, seleziona <em>solo</em> gli eroi DC con
+            <code>Weight</code> compreso tra 60 e 110 kg, e stampa una tabella con
+            tre colonne: <code>Height</code>, <code>Weight</code> e una <em>nuova</em>
+            colonna <code>BMI</code> calcolata al volo.
+          </p>
+          <p class="hint">
+            Suggerimenti: per aggiungere una nuova colonna basta scrivere
+            <code>df['BMI'] = ...</code>. La selezione per editore si fa col solito
+            confronto <code>df['Publisher'] == 'DC Comics'</code>.
+          </p>
+
+<pre data-runnable data-pandas="true" data-title="esercizio4.py" data-lang="python">HEROES_CSV = """\
+Name;Publisher;Height;Weight
+Iron Man;Marvel Comics;198.51;191.85
+Hulk;Marvel Comics;244.50;630.32
+Batman;DC Comics;188.04;95.78
+Superman;DC Comics;191.10;107.62
+Wonder Woman;DC Comics;183.13;74.74
+Spider-Man;Marvel Comics;177.95;72.97
+Aquaman;DC Comics;185.71;146.96
+Green Lantern;DC Comics;185.81;90.10
+Flash;DC Comics;185.36;90.74
+Catwoman;DC Comics;170.58;57.34
+"""
+import pandas as pd, io
+heroes_df = pd.read_csv(io.StringIO(HEROES_CSV), sep=';', index_col='Name')
+
+# Tua soluzione qui sotto
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-pandas="true" data-title="soluzione4.py" data-lang="python">HEROES_CSV = """\
+Name;Publisher;Height;Weight
+Iron Man;Marvel Comics;198.51;191.85
+Hulk;Marvel Comics;244.50;630.32
+Batman;DC Comics;188.04;95.78
+Superman;DC Comics;191.10;107.62
+Wonder Woman;DC Comics;183.13;74.74
+Spider-Man;Marvel Comics;177.95;72.97
+Aquaman;DC Comics;185.71;146.96
+Green Lantern;DC Comics;185.81;90.10
+Flash;DC Comics;185.36;90.74
+Catwoman;DC Comics;170.58;57.34
+"""
+import pandas as pd, io
+heroes_df = pd.read_csv(io.StringIO(HEROES_CSV), sep=';', index_col='Name')
+
+mask = ((heroes_df['Publisher'] == 'DC Comics') &amp;
+        (heroes_df['Weight'].between(60, 110)))
+selezione = heroes_df[mask].copy()
+selezione['BMI'] = selezione['Weight'] / (selezione['Height'] / 100) ** 2
+print(selezione[['Height', 'Weight', 'BMI']].round(1))
+</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 8. RIEPILOGO ============== -->
+      <section id="sec-finale">
+        <h2 class="section-title">8. Riepilogo &amp; sfida finale</h2>
+        <p>
+          Le idee da portare via:
+        </p>
+        <ul>
+          <li><strong>Series</strong> = vettore con etichette; <strong>DataFrame</strong> = tabella di Series omoindicizzate.</li>
+          <li>Accesso <strong>per indice</strong> con <code>.loc</code>, <strong>per posizione</strong> con <code>.iloc</code>.</li>
+          <li>Slicing per indice → estremo finale <em>incluso</em>; per posizione → estremo finale <em>escluso</em>.</li>
+          <li>Le query booleane sono il modo idiomatico per filtrare (parentesi obbligatorie con <code>&amp;</code> e <code>|</code>).</li>
+          <li><code>value_counts</code> + <code>sort_index</code> sostituiscono molte righe di codice scritte in puro Python.</li>
+          <li>Le operazioni tra Series si <strong>allineano per indice</strong>: spesso conviene filtrare a livello di DataFrame.</li>
+          <li><code>pd.read_csv</code> è il punto di ingresso standard per i dati esterni.</li>
+        </ul>
+
+        <div class="quiz" data-id="q-final-1">
+          <h4>Per accedere alla cella di un DataFrame con riga di indice <code>'Hulk'</code>
+            e colonna <code>'Weight'</code>, qual è la sintassi corretta?</h4>
+          <ul class="quiz-options">
+            <li><code>df['Hulk', 'Weight']</code></li>
+            <li><code>df.iloc['Hulk', 'Weight']</code></li>
+            <li data-correct><code>df.loc['Hulk', 'Weight']</code></li>
+            <li><code>df.cell('Hulk', 'Weight')</code></li>
+          </ul>
+          <div class="quiz-explain">
+            <code>.loc</code> accetta una coppia <em>(etichetta_riga, etichetta_colonna)</em>.
+            <code>.iloc</code> vorrebbe due interi posizionali.
+          </div>
+        </div>
+
+        <div class="quiz" data-id="q-final-2">
+          <h4>Quale di queste espressioni è <em>sbagliata</em> per filtrare i Marvel
+            con altezza superiore a 190 cm?</h4>
+          <ul class="quiz-options">
+            <li><code>df[(df['Publisher'] == 'Marvel Comics') &amp; (df['Height'] &gt; 190)]</code></li>
+            <li data-correct><code>df[df['Publisher'] == 'Marvel Comics' and df['Height'] &gt; 190]</code></li>
+            <li><code>df.query("Publisher == 'Marvel Comics' and Height &gt; 190")</code></li>
+            <li><code>df[df['Publisher'].eq('Marvel Comics') &amp; df['Height'].gt(190)]</code></li>
+          </ul>
+          <div class="quiz-explain">
+            Con le Series booleane si usano gli operatori bit-a-bit <code>&amp;</code>,
+            <code>|</code>, <code>~</code> (e parentesi obbligatorie), non
+            <code>and</code>/<code>or</code>. Il metodo <code>.query</code>, invece,
+            accetta il linguaggio naturale "and/or".
+          </div>
+        </div>
+
+        <div class="exercise">
+          <h4>Sfida finale — Densità degli eroi</h4>
+          <p>
+            Per ciascun supereroe del dataset qui sotto:
+          </p>
+          <ol>
+            <li>scarta quelli senza altezza <em>o</em> peso (<code>NaN</code>);</li>
+            <li>calcola una "densità apparente" come <code>Weight / Height³</code> (con altezza in metri);</li>
+            <li>aggiungila come colonna <code>'Density'</code> al DataFrame;</li>
+            <li>stampa i 5 eroi più "densi" mostrando solo Publisher, Height, Weight, Density.</li>
+          </ol>
+          <p class="hint">
+            Utilità: <code>df.dropna(subset=['Height', 'Weight'])</code> elimina le righe
+            con NaN nelle colonne indicate. Per ordinare un DataFrame:
+            <code>df.sort_values('Density', ascending=False)</code>.
+          </p>
+
+<pre data-runnable data-pandas="true" data-title="sfida_finale.py" data-lang="python">HEROES_CSV = """\
+Name;Publisher;Height;Weight
+A-Bomb;Marvel Comics;203.21;441.95
+Abe Sapien;Dark Horse Comics;191.24;65.35
+Abraxas;Marvel Comics;;
+Iron Man;Marvel Comics;198.51;191.85
+Hulk;Marvel Comics;244.50;630.32
+Wolverine;Marvel Comics;160.70;135.21
+Batman;DC Comics;188.04;95.78
+Superman;DC Comics;191.10;107.62
+Aquaman;DC Comics;185.71;146.96
+Wonder Woman;DC Comics;183.13;74.74
+Groot;Marvel Comics;213.09;381.07
+Thor;Marvel Comics;198.10;291.45
+Loki;Marvel Comics;191.30;236.48
+Spider-Man;Marvel Comics;177.95;72.97
+Mystique;Marvel Comics;178.52;54.92
+Storm;Marvel Comics;180.39;58.96
+"""
+import pandas as pd, io
+heroes_df = pd.read_csv(io.StringIO(HEROES_CSV), sep=';', index_col='Name')
+
+# Tua soluzione qui sotto
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-pandas="true" data-title="soluzione_sfida.py" data-lang="python">HEROES_CSV = """\
+Name;Publisher;Height;Weight
+A-Bomb;Marvel Comics;203.21;441.95
+Abe Sapien;Dark Horse Comics;191.24;65.35
+Abraxas;Marvel Comics;;
+Iron Man;Marvel Comics;198.51;191.85
+Hulk;Marvel Comics;244.50;630.32
+Wolverine;Marvel Comics;160.70;135.21
+Batman;DC Comics;188.04;95.78
+Superman;DC Comics;191.10;107.62
+Aquaman;DC Comics;185.71;146.96
+Wonder Woman;DC Comics;183.13;74.74
+Groot;Marvel Comics;213.09;381.07
+Thor;Marvel Comics;198.10;291.45
+Loki;Marvel Comics;191.30;236.48
+Spider-Man;Marvel Comics;177.95;72.97
+Mystique;Marvel Comics;178.52;54.92
+Storm;Marvel Comics;180.39;58.96
+"""
+import pandas as pd, io
+heroes_df = pd.read_csv(io.StringIO(HEROES_CSV), sep=';', index_col='Name')
+
+clean = heroes_df.dropna(subset=['Height', 'Weight']).copy()
+clean['Density'] = clean['Weight'] / (clean['Height'] / 100) ** 3
+top5 = clean.sort_values('Density', ascending=False).head(5)
+print(top5[['Publisher', 'Height', 'Weight', 'Density']].round(2))
+</pre>
+          </div>
+        </div>
+
+        <p style="margin-top: 30px;">
+          <a href="index.html" class="btn">← Torna all'indice</a>
+          <a href="lezione-01.html" class="btn ghost" style="margin-left:8px;">Rivedi Lezione 01</a>
+        </p>
+      </section>
+
+      <footer class="footer">
+        Contenuti basati su <em>D. Malchiodi, Superhero Data Science Vol. 1</em> — CC BY-NC-ND 4.0.<br />
+        Eseguito interamente nel tuo browser via <a href="https://pyodide.org/" target="_blank" rel="noopener">Pyodide</a>.
+      </footer>
+    </main>
+  </div>
+
+  <script src="assets/app.js" defer></script>
+</body>
+</html>
