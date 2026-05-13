@@ -29,6 +29,7 @@
     pyodideLoading: null,
     matplotlibPatched: false,
     matplotlibPackages: ["matplotlib", "numpy"],
+    pandasPatched: false,
     pyodideStatusEl: null,
   };
 
@@ -150,6 +151,26 @@ _plt.show = _il_capture_show
     setStatus("Python pronto", "ready");
   }
 
+  /* Carica pandas on-demand e silenzia il DeprecationWarning su PyArrow
+     (pandas 3.0 lo richiederà, ma Pyodide non lo include): non è azionabile
+     per chi sta seguendo la lezione e finirebbe nello stderr ad ogni run. */
+  async function ensurePandas(pyodide) {
+    setStatus("Caricamento pandas…");
+    await pyodide.loadPackage(["pandas"]);
+    if (!state.pandasPatched) {
+      await pyodide.runPythonAsync(`
+import warnings
+warnings.filterwarnings(
+    "ignore",
+    message="\\nPyarrow will become a required dependency of pandas.*",
+    category=DeprecationWarning,
+)
+      `);
+      state.pandasPatched = true;
+    }
+    setStatus("Python pronto", "ready");
+  }
+
   /* ---------------- Code playground ---------------- */
 
   /* Trasforma un <pre data-lang="python" data-runnable> in un editor interattivo. */
@@ -218,11 +239,7 @@ _plt.show = _il_capture_show
       try {
         const pyodide = await loadPyodide();
         if (needsMatplotlib) await ensureMatplotlib(pyodide);
-        if (needsPandas) {
-          setStatus("Caricamento pandas…");
-          await pyodide.loadPackage(["pandas"]);
-          setStatus("Python pronto", "ready");
-        }
+        if (needsPandas) await ensurePandas(pyodide);
         const extraToLoad = [];
         if (needsScipy) extraToLoad.push("scipy");
         if (needsSklearn) extraToLoad.push("scikit-learn");
