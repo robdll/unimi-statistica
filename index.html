@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive Learning · Superhero Data Science</title>
+  <meta name="description" content="Versione interattiva del corso 'Superhero Data Science' di D. Malchiodi: teoria, esempi eseguibili in browser, quiz ed esercizi." />
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">SD</div>
+        <div>
+          <strong>Superhero DS</strong>
+          <small>Interactive Learning</small>
+        </div>
+      </div>
+
+      <h2>Indice</h2>
+      <ul class="toc">
+        <li><a href="#intro">Introduzione</a></li>
+        <li><a href="#lezioni">Lezioni</a></li>
+        <li><a href="#come-funziona">Come funziona</a></li>
+        <li><a href="#crediti">Crediti</a></li>
+      </ul>
+    </aside>
+
+    <main class="main">
+      <div class="theme-toggle">
+        <button class="btn ghost" type="button">🌙 Tema scuro</button>
+      </div>
+
+      <section class="hero">
+        <h1>Impara la Data Science con i Supereroi</h1>
+        <p>
+          Una rilettura interattiva del corso <em>"Superhero Data Science Vol. 1: probabilità e
+          statistica"</em> di Dario Malchiodi. Ogni lezione propone teoria, esempi
+          <strong>eseguibili direttamente nel browser</strong>, quiz e piccoli esercizi per
+          fissare i concetti.
+        </p>
+        <div class="meta">
+          <span>Python in browser via Pyodide</span>
+          <span>Nessuna installazione</span>
+          <span>Pensato per studio in autonomia</span>
+        </div>
+      </section>
+
+      <section id="intro">
+        <h2 class="section-title">Cos'è questa raccolta?</h2>
+        <p>
+          Il libro originale è un Jupyter notebook ricchissimo di contenuti. Per studiare in
+          autonomia può essere utile averne una versione web più "guidata", in cui:
+        </p>
+        <ul>
+          <li>la teoria è spiegata in piccoli blocchi accompagnati da <strong>codice eseguibile</strong>;</li>
+          <li>è possibile <strong>modificare il codice</strong> e rilanciarlo per sperimentare;</li>
+          <li>al termine di ogni concetto c'è un <strong>quiz</strong> per autovalutarsi;</li>
+          <li>ci sono <strong>esercizi</strong> con soluzione mostrabile a richiesta.</li>
+        </ul>
+        <div class="callout info">
+          <strong>Nota.</strong> Tutto il codice Python gira <em>localmente nel tuo browser</em> grazie
+          a <a href="https://pyodide.org/" target="_blank" rel="noopener">Pyodide</a> (Python compilato
+          in WebAssembly). Non viene inviato nulla a un server.
+        </div>
+      </section>
+
+      <section id="lezioni">
+        <h2 class="section-title">Lezioni</h2>
+        <p>Stiamo costruendo il corso passo per passo. Le lezioni "in arrivo" verranno aggiunte progressivamente.</p>
+
+        <div class="lessons-grid">
+
+          <article class="lesson-card">
+            <span class="badge ready">Disponibile</span>
+            <h3>L01 · Introduzione a Python</h3>
+            <p>Tipi di dati, operatori, liste e tuple, dizionari, controllo del flusso, funzioni,
+              moduli, primi grafici con matplotlib e lettura di file CSV.</p>
+            <a href="lezione-01.html">Apri lezione →</a>
+          </article>
+
+          <article class="lesson-card disabled">
+            <span class="badge soon">In arrivo</span>
+            <h3>L02 · Pandas e DataFrame</h3>
+            <p>Strutture dati di pandas, lettura di dataset reali, indicizzazione, selezione e prime
+              trasformazioni.</p>
+            <a>Disponibile prossimamente</a>
+          </article>
+
+          <article class="lesson-card disabled">
+            <span class="badge soon">In arrivo</span>
+            <h3>L03 · Statistica descrittiva</h3>
+            <p>Distribuzioni di frequenza, indici di posizione e dispersione, visualizzazioni di base.</p>
+            <a>Disponibile prossimamente</a>
+          </article>
+
+          <article class="lesson-card disabled">
+            <span class="badge soon">In arrivo</span>
+            <h3>L09 · Calcolo combinatorio</h3>
+            <p>Permutazioni, disposizioni, combinazioni e applicazioni alla probabilità elementare.</p>
+            <a>Disponibile prossimamente</a>
+          </article>
+
+        </div>
+      </section>
+
+      <section id="come-funziona">
+        <h2 class="section-title">Come funziona</h2>
+        <ol>
+          <li>Apri una lezione dall'elenco qui sopra.</li>
+          <li>Leggi la teoria. Ogni concetto è seguito da un piccolo blocco di codice Python.</li>
+          <li>Premi <code>▶ Run</code> per eseguirlo. Al primo avvio Pyodide viene scaricato (~10 MB);
+            le esecuzioni successive sono istantanee.</li>
+          <li>Modifica il codice e sperimenta liberamente: <code>Reset</code> riporta all'esempio originale.</li>
+          <li>Risolvi i quiz e prova gli esercizi. Le soluzioni si mostrano solo se le richiedi.</li>
+        </ol>
+
+        <div class="callout tip">
+          <strong>Suggerimento.</strong> Il primo blocco di codice in cui premi "Run" è più lento
+          (deve scaricare e inizializzare l'interprete Python). Per le lezioni che usano grafici
+          servono anche <code>numpy</code> e <code>matplotlib</code>: vengono caricati al volo.
+        </div>
+      </section>
+
+      <section id="crediti">
+        <h2 class="section-title">Crediti e licenza</h2>
+        <p>
+          I contenuti didattici si rifanno a
+          <em>D. Malchiodi, "Superhero Data Science. Vol 1: probabilità e statistica"</em>,
+          distribuito con licenza
+          <a href="http://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank" rel="noopener">
+          CC BY-NC-ND 4.0</a>.
+        </p>
+        <p>
+          Questo sito è una rielaborazione personale a fini di studio: parafrasa la spiegazione,
+          aggiunge esercizi e quiz e rende il codice eseguibile in browser, mantenendo la stessa
+          licenza dei contenuti originali.
+        </p>
+      </section>
+
+      <footer class="footer">
+        Fatto per studiare. Buon apprendimento! ⚡
+      </footer>
+    </main>
+  </div>
+
+  <script src="assets/app.js" defer></script>
+</body>
+</html>

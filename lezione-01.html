@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L01 · Introduzione a Python — Interactive Learning</title>
+  <meta name="description" content="Versione interattiva della Lezione 1 di Superhero Data Science: tipi di dati, operatori, liste, dizionari, strutture di controllo, funzioni, moduli, grafici e file CSV." />
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+
+    <!-- ================== SIDEBAR ================== -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">SD</div>
+        <div>
+          <strong>Lezione 01</strong>
+          <small>Introduzione a Python</small>
+        </div>
+      </div>
+
+      <p style="margin: 0 0 8px;">
+        <a href="index.html" style="font-size:0.85rem;">← Torna all'indice</a>
+      </p>
+
+      <h2>In questa lezione</h2>
+      <ul class="toc">
+        <li><a href="#sec-intro">1. Introduzione</a></li>
+        <li><a href="#sec-tipi">2. Tipi di dati semplici</a></li>
+        <li><a href="#sec-operatori">3. Operatori</a></li>
+        <li><a href="#sec-liste">4. Le liste</a>
+          <ul class="toc-sub">
+            <li><a href="#sec-liste-accesso">4.1 Accesso e slicing</a></li>
+            <li><a href="#sec-liste-ofm">4.2 Operatori, funzioni, metodi</a></li>
+            <li><a href="#sec-lambda">4.3 Lambda &amp; argomenti opzionali</a></li>
+          </ul>
+        </li>
+        <li><a href="#sec-tuple">5. Le tuple</a></li>
+        <li><a href="#sec-stringhe">6. Le stringhe</a></li>
+        <li><a href="#sec-insiemi">7. Gli insiemi</a></li>
+        <li><a href="#sec-dizionari">8. I dizionari</a></li>
+        <li><a href="#sec-controllo">9. Strutture di controllo</a></li>
+        <li><a href="#sec-funzioni">10. Funzioni</a></li>
+        <li><a href="#sec-moduli">11. Moduli</a></li>
+        <li><a href="#sec-grafici">12. Disegnare grafici</a></li>
+        <li><a href="#sec-file">13. Leggere dati da file</a></li>
+        <li><a href="#sec-finale">14. Riepilogo &amp; sfida finale</a></li>
+      </ul>
+    </aside>
+
+    <!-- ================== MAIN ================== -->
+    <main class="main">
+
+      <div class="theme-toggle">
+        <button class="btn ghost" type="button">🌙 Tema scuro</button>
+      </div>
+
+      <!-- ============== HERO ============== -->
+      <section class="hero">
+        <h1>L01 · Introduzione a Python</h1>
+        <p>
+          Una panoramica pratica del linguaggio: tipi di dato, strutture, controllo di
+          flusso, funzioni e prime visualizzazioni. Tutto il codice è eseguibile direttamente
+          in pagina: prova a modificare gli esempi e osserva cosa succede.
+        </p>
+        <div class="meta">
+          <span>≈ 30–45 minuti</span>
+          <span>11 quiz</span>
+          <span>5 esercizi</span>
+          <span>Codice eseguibile</span>
+        </div>
+        <div class="progress-wrap" title="Progresso quiz">
+          <div class="progress-bar"></div>
+        </div>
+      </section>
+
+      <!-- ============== 1. INTRO ============== -->
+      <section id="sec-intro">
+        <h2 class="section-title">1. Introduzione</h2>
+        <p>
+          Python è un linguaggio interpretato, dinamicamente tipizzato e con una sintassi
+          minimale: per cominciare a usarlo basta assegnare un valore a una variabile. In
+          questa lezione useremo come "scuola" un dataset (semplificato) di
+          <strong>supereroi</strong>: nome, identità, anno di prima apparizione, peso,
+          altezza, ecc.
+        </p>
+        <div class="callout tip">
+          <strong>Come usare la pagina.</strong> Premi <code>▶ Run</code> sui blocchi di
+          codice per eseguirli direttamente nel browser. Il primo run scarica Pyodide
+          (l'interprete Python in WebAssembly) – richiede qualche secondo, le esecuzioni
+          successive sono istantanee.
+        </div>
+      </section>
+
+      <!-- ============== 2. TIPI ============== -->
+      <section id="sec-tipi">
+        <h2 class="section-title">2. Tipi di dati semplici</h2>
+        <p>
+          I tre tipi fondamentali di Python sono <code>bool</code> (con i valori
+          <code>True</code> e <code>False</code>), <code>int</code> (interi) e
+          <code>float</code> (numeri in virgola mobile). Non esiste un tipo <em>carattere</em>:
+          le stringhe sono direttamente oggetti del linguaggio.
+        </p>
+
+        <p>
+          Per scoprire il tipo di un valore puoi usare la funzione predefinita
+          <code>type()</code>:
+        </p>
+
+<pre data-runnable data-title="tipi.py" data-lang="python">first_appearance = 1971
+weight = 71.6
+is_hero = True
+
+print(type(first_appearance))
+print(type(weight))
+print(type(is_hero))
+</pre>
+
+        <p>
+          Per i numeri molto grandi o molto piccoli si usa la <em>notazione scientifica</em>:
+          <code>1E9</code> vale un miliardo, <code>1E-9</code> un miliardesimo. Prova:
+        </p>
+
+<pre data-runnable data-title="notazione_scientifica.py" data-lang="python">a = 1E9
+b = 1E-9
+print(a, b)
+print(type(a), type(b))
+</pre>
+
+        <div class="callout info">
+          <strong>Tipizzazione dinamica ma forte.</strong> Il tipo di una variabile può cambiare
+          riassegnandola, ma non è "tutto e niente": le operazioni vengono comunque controllate
+          a runtime e Python lancia un errore se hanno senso solo per certi tipi (es.
+          <code>"abc" + 1</code>).
+        </div>
+
+        <div class="quiz" data-id="q-tipi">
+          <h4>Cosa stampa il seguente codice?</h4>
+          <p><code>print(type(3.0))</code></p>
+          <ul class="quiz-options">
+            <li><code>&lt;class 'int'&gt;</code></li>
+            <li data-correct><code>&lt;class 'float'&gt;</code></li>
+            <li><code>&lt;class 'number'&gt;</code></li>
+            <li>Errore di sintassi</li>
+          </ul>
+          <div class="quiz-explain">
+            La presenza del punto rende <code>3.0</code> un letterale di tipo <code>float</code>,
+            anche se rappresenta un valore matematicamente intero.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 3. OPERATORI ============== -->
+      <section id="sec-operatori">
+        <h2 class="section-title">3. Operatori aritmetici e di confronto</h2>
+        <p>
+          Python supporta tutti i tipici operatori binari, scritti in notazione
+          <em>infissa</em> (l'operatore in mezzo ai due operandi):
+        </p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Operazione</th><th>Simbolo</th><th>Esempio</th><th>Risultato</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Addizione</td><td><code>+</code></td><td><code>3 + 4</code></td><td><code>7</code></td></tr>
+              <tr><td>Sottrazione</td><td><code>-</code></td><td><code>10 - 3</code></td><td><code>7</code></td></tr>
+              <tr><td>Moltiplicazione</td><td><code>*</code></td><td><code>3 * 4</code></td><td><code>12</code></td></tr>
+              <tr><td>Divisione (reale)</td><td><code>/</code></td><td><code>7 / 2</code></td><td><code>3.5</code></td></tr>
+              <tr><td>Divisione intera</td><td><code>//</code></td><td><code>7 // 2</code></td><td><code>3</code></td></tr>
+              <tr><td>Modulo (resto)</td><td><code>%</code></td><td><code>7 % 2</code></td><td><code>1</code></td></tr>
+              <tr><td>Elevamento a potenza</td><td><code>**</code></td><td><code>2 ** 10</code></td><td><code>1024</code></td></tr>
+              <tr><td>Uguale / diverso</td><td><code>== !=</code></td><td><code>3 == 3</code></td><td><code>True</code></td></tr>
+              <tr><td>Confronti</td><td><code>&lt; &lt;= &gt; &gt;=</code></td><td><code>5 &lt; 3</code></td><td><code>False</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout warning">
+          <strong>Attenzione alle due divisioni!</strong> <code>/</code> restituisce sempre
+          un <code>float</code>, anche quando il risultato è "esatto" (<code>4 / 2</code>
+          vale <code>2.0</code>, non <code>2</code>). Per ottenere un intero usa
+          <code>//</code>.
+        </div>
+
+        <p>Gioca con questa "calcolatrice" – cambia i valori e i simboli a piacere:</p>
+
+<pre data-runnable data-title="calcolatrice.py" data-lang="python">a = 17
+b = 5
+
+print("a + b  =", a + b)
+print("a - b  =", a - b)
+print("a * b  =", a * b)
+print("a / b  =", a / b)    # divisione reale
+print("a // b =", a // b)   # divisione intera
+print("a % b  =", a % b)    # resto
+print("a ** b =", a ** b)   # potenza
+print("a == b ?", a == b)
+</pre>
+
+        <div class="exercise">
+          <h4>Esercizio 1 — Quante settimane?</h4>
+          <p>
+            Dato un certo numero di giorni, scrivi un'espressione che stampi
+            <em>quante settimane intere</em> contiene e <em>quanti giorni avanzano</em>.
+            Per esempio, 23 giorni = 3 settimane e 2 giorni.
+          </p>
+          <p class="hint">Suggerimento: usa la divisione intera e il modulo.</p>
+
+          <pre data-runnable data-title="esercizio1.py" data-lang="python">giorni = 23
+
+# Scrivi qui sotto la tua soluzione
+# settimane = ...
+# resto = ...
+# print(...)
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-title="soluzione1.py" data-lang="python">giorni = 23
+settimane = giorni // 7
+resto = giorni % 7
+print(f"{giorni} giorni = {settimane} settimane e {resto} giorni")
+</pre>
+          </div>
+        </div>
+
+        <div class="quiz" data-id="q-operatori">
+          <h4>Quanto vale <code>2 ** 3 ** 2</code> in Python?</h4>
+          <ul class="quiz-options">
+            <li><code>64</code> (cioè <code>(2**3)**2</code>)</li>
+            <li data-correct><code>512</code> (cioè <code>2**(3**2)</code>)</li>
+            <li><code>36</code></li>
+            <li>Errore: parentesi obbligatorie</li>
+          </ul>
+          <div class="quiz-explain">
+            L'operatore <code>**</code> è <em>associativo a destra</em>: si valuta prima
+            <code>3 ** 2 = 9</code>, poi <code>2 ** 9 = 512</code>.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 4. LISTE ============== -->
+      <section id="sec-liste">
+        <h2 class="section-title">4. Le liste</h2>
+        <p>
+          Una lista è una struttura dati <strong>eterogenea</strong> (può contenere oggetti
+          di tipo diverso) e ad <strong>accesso posizionale</strong>: si dichiara con
+          parentesi quadre, separando gli elementi con virgole.
+        </p>
+
+<pre data-runnable data-title="lista_iron_man.py" data-lang="python">iron_man = ['Iron Man',
+            'Tony Stark',
+            'Long Island, New York',
+            'Marvel Comics',
+            198.51,
+            191.85,
+            'M',
+            1963,
+            'Blue',
+            'Black',
+            85,
+            'high']
+
+print(type(iron_man))
+print("Numero di campi:", len(iron_man))
+</pre>
+
+        <h3 id="sec-liste-accesso">4.1 Accesso e slicing</h3>
+        <p>
+          Si accede agli elementi indicandone la posizione tra parentesi quadre. La
+          numerazione parte da <strong>0</strong>. Indici negativi contano dalla fine:
+          <code>-1</code> è l'ultimo elemento, <code>-2</code> il penultimo, e così via.
+        </p>
+
+<pre data-runnable data-title="accesso.py" data-lang="python">iron_man = ['Iron Man', 'Tony Stark', 'Long Island, New York',
+            'Marvel Comics', 198.51, 191.85, 'M', 1963,
+            'Blue', 'Black', 85, 'high']
+
+print(iron_man[0])    # primo elemento
+print(iron_man[1])    # identità
+print(iron_man[-1])   # ultimo
+print(iron_man[-2])   # penultimo
+</pre>
+
+        <p>
+          Lo <em>slicing</em> permette di estrarre una sottosequenza con la sintassi
+          <code>lista[inizio:fine]</code>. Il primo indice è incluso, il secondo è
+          <strong>escluso</strong>:
+        </p>
+
+<pre data-runnable data-title="slicing.py" data-lang="python">iron_man = ['Iron Man', 'Tony Stark', 'Long Island, New York',
+            'Marvel Comics', 198.51, 191.85, 'M', 1963,
+            'Blue', 'Black', 85, 'high']
+
+print(iron_man[4:6])     # altezza e peso
+print(iron_man[-4:-2])   # gli occhi e i capelli
+print(iron_man[:3])      # primi tre
+print(iron_man[-3:])     # ultimi tre
+</pre>
+
+        <div class="callout info">
+          <strong>Perché "fine esclusa"?</strong> Permette scritture comode come
+          <code>l[i:i+n]</code> per estrarre <code>n</code> elementi a partire da
+          <code>i</code>, e di concatenare due slice senza sovrapposizioni:
+          <code>l[:k] + l[k:] == l</code>.
+        </div>
+
+        <div class="quiz" data-id="q-slicing">
+          <h4>Data <code>l = [10, 20, 30, 40, 50]</code>, quanto vale <code>l[1:4]</code>?</h4>
+          <ul class="quiz-options">
+            <li><code>[10, 20, 30, 40]</code></li>
+            <li data-correct><code>[20, 30, 40]</code></li>
+            <li><code>[20, 30, 40, 50]</code></li>
+            <li><code>[20, 30]</code></li>
+          </ul>
+          <div class="quiz-explain">
+            L'indice 1 è <em>incluso</em> (valore <code>20</code>), l'indice 4 è
+            <em>escluso</em> (quindi non si arriva al <code>50</code>).
+          </div>
+        </div>
+
+        <h3 id="sec-liste-ofm">4.2 Operatori, funzioni e metodi</h3>
+        <p>
+          Sulle liste possiamo usare tre tipi di "strumenti" che è bene distinguere:
+        </p>
+        <ul>
+          <li>gli <strong>operatori</strong>: simboli posti tra/prima degli operandi (es. <code>in</code>, <code>del</code>);</li>
+          <li>le <strong>funzioni</strong>: si invocano col nome seguito da parentesi (es. <code>len(l)</code>);</li>
+          <li>i <strong>metodi</strong>: appartengono all'oggetto e si invocano con la <em>dot notation</em> (es. <code>l.sort()</code>).</li>
+        </ul>
+
+<pre data-runnable data-title="ofm_liste.py" data-lang="python">names = ['Aquaman', 'Ant-Man', 'Batman', 'Black Widow',
+         'Captain America', 'Daredavil', 'Elektra', 'Flash',
+         'Green Arrow', 'Human Torch', 'Hancock', 'Iron Man',
+         'Mystique', 'Professor X', 'Rogue', 'Superman',
+         'Spider-Man', 'Thor', 'Northstar']
+
+# Operatore "in"
+print('Hancock' in names)
+print('Wolverine' in names)
+
+# Funzione len()
+print("Quanti supereroi:", len(names))
+
+# Metodo .sort() — modifica IN PLACE e non restituisce nulla
+names.sort()
+print(names[:5])
+</pre>
+
+        <div class="callout warning">
+          <strong>In place vs. nuova copia.</strong> Il metodo <code>sort()</code> modifica
+          la lista <em>in place</em> e restituisce <code>None</code>. Se vuoi una nuova lista
+          ordinata senza toccare l'originale, usa la funzione <code>sorted(l)</code>.
+        </div>
+
+        <p>L'operatore <code>del</code> elimina un elemento data la sua posizione:</p>
+
+<pre data-runnable data-title="del_op.py" data-lang="python">names = ['Aquaman', 'Ant-Man', 'Batman']
+print("Prima:", names)
+
+del names[0]
+print("Dopo:", names)
+print("Lunghezza:", len(names))
+</pre>
+
+        <h3 id="sec-lambda">4.3 Lambda e argomenti opzionali</h3>
+        <p>
+          Molti metodi e funzioni accettano <strong>argomenti opzionali</strong>, identificati
+          per nome e con un valore di default. Per esempio <code>sort(reverse=True)</code>
+          inverte il verso dell'ordinamento.
+        </p>
+        <p>
+          Una <strong>lambda</strong> è una funzione anonima, comoda per parametrizzare
+          ordinamenti e trasformazioni: <code>lambda x: &lt;espressione&gt;</code>.
+        </p>
+
+<pre data-runnable data-title="lambda_sort.py" data-lang="python">successore = lambda n: n + 1
+print(successore(9))
+
+names = ['Aquaman', 'Ant-Man', 'Batman', 'Captain America', 'Thor']
+
+# Ordina per lunghezza del nome (crescente)
+names.sort(key=lambda n: len(n))
+print(names)
+
+# Ordina alfabeticamente al contrario
+names.sort(reverse=True)
+print(names)
+</pre>
+
+        <div class="exercise">
+          <h4>Esercizio 2 — Ordinare per ultima lettera</h4>
+          <p>
+            Data la lista di nomi qui sotto, ordinala in modo che vengano mostrati
+            <em>in base all'ultima lettera del nome</em> (in ordine alfabetico).
+          </p>
+          <p class="hint">
+            Suggerimento: come <code>key</code> serve una funzione che, dato un nome, restituisca
+            il suo ultimo carattere (l'indice <code>-1</code> di una stringa).
+          </p>
+
+<pre data-runnable data-title="esercizio2.py" data-lang="python">names = ['Aquaman', 'Batman', 'Iron Man', 'Thor', 'Hulk', 'Flash']
+
+# Tua soluzione qui sotto:
+# names.sort(key=...)
+# print(names)
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-title="soluzione2.py" data-lang="python">names = ['Aquaman', 'Batman', 'Iron Man', 'Thor', 'Hulk', 'Flash']
+names.sort(key=lambda n: n[-1])
+print(names)
+</pre>
+          </div>
+        </div>
+
+        <div class="quiz" data-id="q-sort">
+          <h4>Cosa stampa il seguente codice?</h4>
+
+<pre style="margin: 8px 0;"><code>l = [3, 1, 2]
+print(l.sort())</code></pre>
+
+          <ul class="quiz-options">
+            <li><code>[1, 2, 3]</code></li>
+            <li data-correct><code>None</code></li>
+            <li><code>[3, 1, 2]</code></li>
+            <li>Errore</li>
+          </ul>
+          <div class="quiz-explain">
+            <code>list.sort()</code> ordina la lista <em>in place</em> e restituisce
+            <code>None</code>. Per stampare la lista ordinata serve una riga separata
+            (oppure usare <code>sorted(l)</code>).
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 5. TUPLE ============== -->
+      <section id="sec-tuple">
+        <h2 class="section-title">5. Le tuple</h2>
+        <p>
+          Una <strong>tupla</strong> è una lista <em>immutabile</em>: una volta creata, i
+          suoi elementi non si possono modificare. Si dichiara con parentesi tonde.
+        </p>
+
+<pre data-runnable data-title="tupla.py" data-lang="python">rogue = ('Rogue', 'Anna Marie', 'Caldecott County, Mississippi',
+         'Marvel Comics', 173.1, 54.39, 'F', 1981,
+         'Green', 'Brown / White', 10, 'good')
+
+print(rogue[1])
+print(len(rogue))
+
+# Tentare di modificare una tupla lancia un'eccezione
+try:
+    rogue[-2] = 70
+except TypeError as e:
+    print("Errore:", e)
+</pre>
+
+        <div class="callout info">
+          <strong>Tupla con un solo elemento.</strong> <code>(1)</code> è interpretato come
+          il numero <code>1</code> tra parentesi. Per indicare una tupla con un unico elemento
+          serve la virgola: <code>(1,)</code>.
+        </div>
+
+        <p>
+          Quando preferire una tupla a una lista? Quando vuoi <strong>proteggere i dati da
+          modifiche accidentali</strong> (è una garanzia, oltre che un suggerimento per chi
+          legge il codice) e in molti casi è anche un po' più efficiente.
+        </p>
+
+        <div class="quiz" data-id="q-tuple">
+          <h4>Quale espressione crea una tupla con un solo elemento?</h4>
+          <ul class="quiz-options">
+            <li><code>(42)</code></li>
+            <li data-correct><code>(42,)</code></li>
+            <li><code>[42]</code></li>
+            <li><code>tuple(42)</code></li>
+          </ul>
+          <div class="quiz-explain">
+            La virgola finale è ciò che distingue una <em>tupla</em> da un'espressione
+            tra parentesi. <code>tuple(42)</code> non funziona perché si aspetta un iterabile.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 6. STRINGHE ============== -->
+      <section id="sec-stringhe">
+        <h2 class="section-title">6. Le stringhe</h2>
+        <p>
+          Le stringhe si comportano come <em>tuple di caratteri</em>: si possono indicizzare
+          e "slicare", ma non si possono modificare in place.
+        </p>
+
+<pre data-runnable data-title="stringhe.py" data-lang="python">name = 'Anna Marie'
+print(name[3])         # un singolo carattere
+print(name[:4])        # primi 4 caratteri
+print(name[-5:])       # ultimi 5
+print(len(name))
+
+# Le stringhe sono immutabili
+try:
+    name[0] = 'a'
+except TypeError as e:
+    print("Errore:", e)
+</pre>
+
+        <p>
+          Per "modificare" una stringa, in realtà se ne crea una nuova:
+        </p>
+
+<pre data-runnable data-title="modifica_stringa.py" data-lang="python">name = 'Anna Marie'
+name = name.lower()
+print(name)
+print(name.replace('anna', 'Joanne'))
+print(name.upper().split(' '))
+</pre>
+      </section>
+
+      <!-- ============== 7. INSIEMI ============== -->
+      <section id="sec-insiemi">
+        <h2 class="section-title">7. Gli insiemi (cenni)</h2>
+        <p>
+          Un <strong>set</strong> rappresenta una collezione finita di elementi
+          <em>distinti</em> e <em>non ordinati</em>. Lo useremo poco nel corso, ma è un tipo
+          di dato molto utile per controllare unicità o per fare operazioni "alla matematica"
+          (unione, intersezione…).
+        </p>
+
+<pre data-runnable data-title="insiemi.py" data-lang="python">a = {1, 2, 3, 3, 2, 1}     # i duplicati spariscono
+b = {3, 4, 5}
+
+print("a =", a)
+print("a | b =", a | b)    # unione
+print("a &amp; b =", a &amp; b)    # intersezione
+print("a - b =", a - b)    # differenza
+print(2 in a)
+</pre>
+      </section>
+
+      <!-- ============== 8. DIZIONARI ============== -->
+      <section id="sec-dizionari">
+        <h2 class="section-title">8. I dizionari</h2>
+        <p>
+          Un <strong>dizionario</strong> associa <em>chiavi</em> a <em>valori</em> (in modo
+          analogo al concetto matematico di funzione). È spesso il modo più leggibile per
+          rappresentare un "record".
+        </p>
+
+<pre data-runnable data-title="dizionario.py" data-lang="python">rogue = {'name': 'Rogue',
+         'identity': 'Anna Marie',
+         'birth_place': 'Caldecott County, Mississippi',
+         'publisher': 'Marvel Comics',
+         'height': 173.1,
+         'weight': 54.39,
+         'gender': 'F',
+         'first_appearance': 1981,
+         'eye_color': 'Green',
+         'hair_color': 'Brown / White',
+         'strength': 10,
+         'intelligence': 'good'}
+
+print(rogue['identity'])
+print('publisher' in rogue)
+
+# Accesso in scrittura: aggiunge la coppia se la chiave non esiste
+rogue['affiliation'] = 'X-Men'
+print(rogue['affiliation'])
+
+# Accesso a una chiave inesistente solleva KeyError
+try:
+    print(rogue['power'])
+except KeyError as e:
+    print("Chiave assente:", e)
+</pre>
+
+        <div class="callout tip">
+          <strong>Quando usarli?</strong> Se i campi sono concettualmente <em>nomi</em> e
+          non posizioni (come per i record), i dizionari rendono il codice molto più
+          leggibile: <code>rogue['identity']</code> è chiarissimo, mentre
+          <code>rogue[1]</code> obbliga a ricordare l'ordine.
+        </div>
+
+        <div class="quiz" data-id="q-dict">
+          <h4>Quale di queste affermazioni sui dizionari è <strong>falsa</strong>?</h4>
+          <ul class="quiz-options">
+            <li>L'operatore <code>in</code> verifica la presenza di una <em>chiave</em>.</li>
+            <li>Assegnare a una chiave inesistente la <em>aggiunge</em> al dizionario.</li>
+            <li data-correct>Si può accedere ai valori per posizione, come nelle liste.</li>
+            <li>L'accesso in lettura a una chiave inesistente solleva <code>KeyError</code>.</li>
+          </ul>
+          <div class="quiz-explain">
+            I dizionari sono associativi: l'accesso avviene per chiave, non per posizione.
+            Le altre tre affermazioni sono vere.
+          </div>
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 3 — IMC del supereroe</h4>
+          <p>
+            Dato il dizionario <code>iron_man</code> qui sotto, calcola il suo <em>indice di
+            massa corporea</em> (BMI = peso in kg / altezza in m al quadrato) e stampalo
+            arrotondato a una cifra decimale.
+          </p>
+          <p class="hint">
+            Suggerimento: l'altezza è in centimetri, quindi convertila in metri (dividendo per 100).
+            Per l'arrotondamento c'è la funzione <code>round(x, 1)</code>.
+          </p>
+
+<pre data-runnable data-title="esercizio3.py" data-lang="python">iron_man = {'name': 'Iron Man', 'height': 198.51, 'weight': 191.85}
+
+# Tua soluzione qui sotto
+# bmi = ...
+# print(...)
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-title="soluzione3.py" data-lang="python">iron_man = {'name': 'Iron Man', 'height': 198.51, 'weight': 191.85}
+
+altezza_m = iron_man['height'] / 100
+bmi = iron_man['weight'] / (altezza_m ** 2)
+print(f"BMI di {iron_man['name']}: {round(bmi, 1)}")
+</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 9. CONTROLLO ============== -->
+      <section id="sec-controllo">
+        <h2 class="section-title">9. Strutture di controllo</h2>
+        <p>
+          Python organizza i blocchi di codice tramite l'<strong>indentazione</strong>: non
+          servono parentesi graffe né <code>begin/end</code>, ma è obbligatorio mantenere
+          coerente la spaziatura.
+        </p>
+
+        <h3>9.1 Selezione: <code>if/elif/else</code></h3>
+
+<pre data-runnable data-title="if_else.py" data-lang="python">first_appearance = 1981
+
+if first_appearance &lt; 1960:
+    epoca = "età d'oro"
+elif first_appearance &lt; 1980:
+    epoca = "età d'argento"
+else:
+    epoca = "età moderna"
+
+print(f"{first_appearance}: {epoca}")
+</pre>
+
+        <h3>9.2 Iterazione: <code>for</code></h3>
+        <p>
+          Il <code>for</code> di Python <em>non</em> è un ciclo numerato classico: itera sugli
+          elementi di un oggetto iterabile (lista, tupla, stringa, dizionario, range…).
+        </p>
+
+<pre data-runnable data-title="for_basic.py" data-lang="python">names = ['Aquaman', 'Batman', 'Thor']
+for n in names:
+    print(n, '→', len(n), 'caratteri')
+</pre>
+
+        <p>
+          Se ti serve un indice usa <code>enumerate</code>; se vuoi un ciclo "alla C" usa
+          <code>range</code>:
+        </p>
+
+<pre data-runnable data-title="enumerate_range.py" data-lang="python">names = ['Aquaman', 'Batman', 'Thor']
+
+for i, n in enumerate(names):
+    print(i, n)
+
+print("---")
+
+for i in range(3):
+    print("iterazione", i)
+</pre>
+
+        <h3>9.3 Esempio: frequenze assolute</h3>
+        <p>
+          Mettiamo insieme dizionari, <code>for</code> e <code>if</code> per contare quanti
+          supereroi sono apparsi per la prima volta in ogni anno (assegnando <code>None</code>
+          a quelli con anno mancante):
+        </p>
+
+<pre data-runnable data-title="frequenze.py" data-lang="python">years = [1941, 1962, None, None, 1941,
+         1964, None, 1940, 1941, 1961,
+         None, 1963, None, 1963, 1981,
+         None, None, 1962, 1979]
+
+counts = {}
+for y in years:
+    if y in counts:
+        counts[y] += 1
+    else:
+        counts[y] = 1
+
+print(counts)
+</pre>
+
+        <div class="callout tip">
+          <strong>Più elegante con <code>defaultdict</code>.</strong> Vedremo nella sezione
+          "Moduli" come riscrivere questo conteggio senza il controllo <code>if</code>.
+        </div>
+
+        <div class="quiz" data-id="q-for">
+          <h4>Quale di queste affermazioni sul <code>for</code> di Python è vera?</h4>
+          <ul class="quiz-options">
+            <li>È un ciclo numerato: la variabile vale 0, 1, 2, … fino a un limite.</li>
+            <li data-correct>Itera sugli <em>elementi</em> di qualsiasi oggetto iterabile.</li>
+            <li>Funziona solo con le liste.</li>
+            <li>Richiede sempre la funzione <code>range</code>.</li>
+          </ul>
+          <div class="quiz-explain">
+            Il <code>for</code> di Python è un <em>foreach</em>: scorre gli elementi di
+            qualsiasi iterabile. Per avere un ciclo numerato basta iterare su
+            <code>range(n)</code>.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 10. FUNZIONI ============== -->
+      <section id="sec-funzioni">
+        <h2 class="section-title">10. Funzioni</h2>
+        <p>
+          Le funzioni si definiscono con la parola chiave <code>def</code>. Il corpo è
+          indentato, e il valore restituito è specificato con <code>return</code>
+          (in mancanza di <code>return</code>, la funzione restituisce <code>None</code>).
+        </p>
+
+<pre data-runnable data-title="funzione.py" data-lang="python">def get_sorted_counts(sequence):
+    """Restituisce le frequenze assolute degli elementi, ordinate dal più al meno frequente."""
+    counts = {}
+    for x in sequence:
+        if x in counts:
+            counts[x] += 1
+        else:
+            counts[x] = 1
+    pairs = list(counts.items())
+    return sorted(pairs, key=lambda p: p[1], reverse=True)
+
+
+years = [1941, 1962, None, None, 1941, 1964, None, 1940, 1941, 1961,
+         None, 1963, None, 1963, 1981, None, None, 1962, 1979]
+
+print(get_sorted_counts(years))
+</pre>
+
+        <div class="callout info">
+          <strong>Docstring.</strong> Le triple virgolette subito sotto la definizione sono
+          la <em>docstring</em>: è la documentazione "ufficiale" della funzione, accessibile
+          via <code>help()</code> o l'attributo <code>.__doc__</code>.
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 4 — Una funzione conta-vocali</h4>
+          <p>
+            Scrivi una funzione <code>conta_vocali(s)</code> che, data una stringa
+            <code>s</code>, restituisca quante vocali contiene
+            (considera <em>a, e, i, o, u</em>, sia minuscole che maiuscole).
+          </p>
+
+<pre data-runnable data-title="esercizio4.py" data-lang="python">def conta_vocali(s):
+    pass  # scrivi qui
+
+# Test:
+# print(conta_vocali("Iron Man"))      # atteso: 3
+# print(conta_vocali("BTHR"))           # atteso: 0
+# print(conta_vocali("Captain America")) # atteso: 6
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-title="soluzione4.py" data-lang="python">def conta_vocali(s):
+    vocali = "aeiouAEIOU"
+    return sum(1 for c in s if c in vocali)
+
+print(conta_vocali("Iron Man"))
+print(conta_vocali("BTHR"))
+print(conta_vocali("Captain America"))
+</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 11. MODULI ============== -->
+      <section id="sec-moduli">
+        <h2 class="section-title">11. Importare moduli</h2>
+        <p>
+          Un <strong>modulo</strong> è un file (o pacchetto) che contiene definizioni di
+          funzioni, classi e variabili. Si importa con <code>import</code>; si può importare
+          tutto il modulo, solo alcuni suoi elementi, o assegnargli un nome alternativo.
+        </p>
+
+<pre data-runnable data-title="moduli_basics.py" data-lang="python"># Forma 1: importa l'intero modulo, accesso via "math.NOME"
+import math
+print(math.pi)
+print(math.sqrt(2))
+
+# Forma 2: importa solo alcuni nomi
+from math import floor, ceil
+print(floor(3.7), ceil(3.2))
+
+# Forma 3: alias (convenzione molto diffusa)
+import statistics as stats
+print(stats.mean([1, 2, 3, 4]))
+</pre>
+
+        <p>
+          Riscriviamo il conteggio delle frequenze sfruttando <code>defaultdict</code> dal
+          modulo standard <code>collections</code>: niente più <code>if</code>!
+        </p>
+
+<pre data-runnable data-title="defaultdict.py" data-lang="python">from collections import defaultdict
+
+def get_sorted_counts(sequence):
+    counts = defaultdict(int)   # chiavi mancanti → 0
+    for x in sequence:
+        counts[x] += 1
+    return sorted(counts.items(), key=lambda p: p[1], reverse=True)
+
+years = [1941, 1962, None, None, 1941, 1964, None, 1940, 1941, 1961,
+         None, 1963, None, 1963, 1981, None, None, 1962, 1979]
+
+print(get_sorted_counts(years))
+</pre>
+
+        <div class="callout info">
+          <strong>Convenzioni.</strong> Quando lavoreremo con dati useremo molto
+          <code>numpy</code> e <code>pandas</code>. La convenzione (rispettala!) è
+          importarli così:
+          <code>import numpy as np</code> e <code>import pandas as pd</code>.
+        </div>
+
+        <div class="quiz" data-id="q-moduli">
+          <h4>Cosa fa <code>defaultdict(int)</code>?</h4>
+          <ul class="quiz-options">
+            <li>Crea un dizionario in cui tutte le chiavi devono essere interi.</li>
+            <li data-correct>Crea un dizionario in cui le chiavi mai assegnate restituiscono <code>0</code>.</li>
+            <li>Crea un dizionario di numeri interi crescenti.</li>
+            <li>È un alias di <code>dict</code>.</li>
+          </ul>
+          <div class="quiz-explain">
+            <code>defaultdict(int)</code> imposta come <em>fabbrica</em> per i valori
+            assenti la chiamata <code>int()</code>, che restituisce <code>0</code>.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 12. GRAFICI ============== -->
+      <section id="sec-grafici">
+        <h2 class="section-title">12. Disegnare grafici (matplotlib)</h2>
+        <p>
+          La libreria di riferimento per i grafici è <strong>matplotlib</strong>. La funzione
+          <code>plt.bar(x, y)</code> disegna un grafico a barre dati i valori sull'asse delle
+          ascisse e quelli sull'asse delle ordinate.
+        </p>
+
+        <div class="callout warning">
+          <strong>Attenzione:</strong> il primo blocco con grafici scarica <code>numpy</code>
+          e <code>matplotlib</code> nel browser (può richiedere qualche secondo).
+        </div>
+
+<pre data-runnable data-matplotlib="true" data-title="grafico_frequenze.py" data-lang="python">from collections import defaultdict
+import numpy as np
+import matplotlib.pyplot as plt
+
+def get_sorted_counts(sequence):
+    counts = defaultdict(int)
+    for x in sequence:
+        counts[x] += 1
+    return sorted(counts.items(), key=lambda p: p[1], reverse=True)
+
+years = [1941, 1962, 1941, 1964, 1940, 1941, 1961,
+         1963, 1963, 1981, 1962, 1979]
+
+counts = get_sorted_counts(years)
+x, y = np.array(counts).transpose()
+
+plt.figure(figsize=(6, 3))
+plt.bar(x, y, color="#4f8cff")
+plt.title("Prime apparizioni — frequenze assolute")
+plt.xlabel("Anno")
+plt.ylabel("Numero di supereroi")
+plt.show()
+</pre>
+
+        <p>
+          Il trucco interessante è <code>np.array(...).transpose()</code> che converte una
+          lista di coppie <code>[(anno, conteggio), ...]</code> in due array separati di
+          ascisse e ordinate. La sintassi <code>x, y = ...</code> sfrutta l'<em>unpacking</em>
+          di Python.
+        </p>
+
+        <div class="callout tip">
+          <strong>Unpacking.</strong> Puoi assegnare più variabili in un colpo solo:
+          <code>a, b = (42, 102)</code>. È anche il modo più "pythonico" di scambiare due
+          variabili: <code>a, b = b, a</code>.
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 5 — Personalizza il grafico</h4>
+          <p>
+            Modifica il blocco di codice qui sotto in modo che il grafico:
+          </p>
+          <ul>
+            <li>limiti l'asse delle ascisse all'intervallo <em>1939 → 1985</em>;</li>
+            <li>abbia barre di colore <code>"#ffc857"</code>;</li>
+            <li>mostri una griglia orizzontale leggera (<code>plt.grid(axis='y', alpha=0.3)</code>).</li>
+          </ul>
+
+<pre data-runnable data-matplotlib="true" data-title="esercizio5.py" data-lang="python">import numpy as np
+import matplotlib.pyplot as plt
+from collections import defaultdict
+
+years = [1941, 1962, 1941, 1964, 1940, 1941, 1961,
+         1963, 1963, 1981, 1962, 1979]
+
+counts = defaultdict(int)
+for y in years:
+    counts[y] += 1
+x, y = np.array(sorted(counts.items())).transpose()
+
+plt.figure(figsize=(6, 3))
+plt.bar(x, y)               # ← personalizza colore
+# plt.xlim(...)             # ← imposta i limiti
+# plt.grid(...)             # ← aggiungi griglia
+plt.title("Prime apparizioni dei supereroi")
+plt.show()
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-matplotlib="true" data-title="soluzione5.py" data-lang="python">import numpy as np
+import matplotlib.pyplot as plt
+from collections import defaultdict
+
+years = [1941, 1962, 1941, 1964, 1940, 1941, 1961,
+         1963, 1963, 1981, 1962, 1979]
+
+counts = defaultdict(int)
+for y in years:
+    counts[y] += 1
+x, y = np.array(sorted(counts.items())).transpose()
+
+plt.figure(figsize=(6, 3))
+plt.bar(x, y, color="#ffc857")
+plt.xlim(1939, 1985)
+plt.grid(axis='y', alpha=0.3)
+plt.title("Prime apparizioni dei supereroi")
+plt.show()
+</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 13. FILE ============== -->
+      <section id="sec-file">
+        <h2 class="section-title">13. Leggere dati da file (cenni)</h2>
+        <p>
+          Nei progetti reali i dati arrivano da file (CSV, JSON, database…). Il pattern
+          tipico per leggere un CSV con la libreria standard è il seguente:
+        </p>
+
+        <pre style="background: var(--code-bg); color: var(--code-fg); padding:14px 16px; border-radius: var(--radius); font-family: var(--font-mono); font-size: 0.92rem; overflow-x:auto;"><code>import csv
+
+with open('data/heroes.csv', 'r') as heroes_file:
+    heroes_reader = csv.reader(heroes_file, delimiter=';', quotechar='"')
+    heroes = list(heroes_reader)[1:]   # esclude la riga di intestazione</code></pre>
+
+        <ul>
+          <li>Il blocco <code>with</code> garantisce la chiusura automatica del file (anche in caso di eccezioni).</li>
+          <li><code>csv.reader</code> sa gestire separatori diversi dalla virgola (qui il punto e virgola) e campi quotati.</li>
+          <li><code>list(...)</code> trasforma il "reader" in una lista di righe.</li>
+        </ul>
+
+        <div class="callout warning">
+          <strong>Nota.</strong> In questa pagina interattiva non possiamo leggere file dal
+          tuo disco (Pyodide gira in una sandbox). Più avanti useremo <code>pandas</code>:
+          <code>pd.read_csv('heroes.csv', sep=';')</code> fa tutto in una sola riga.
+        </div>
+
+        <h3>List comprehension</h3>
+        <p>
+          Un costrutto utilissimo per estrarre/trasformare dati da una lista è la
+          <strong>list comprehension</strong>: <code>[f(e) for e in l if g(e)]</code>.
+        </p>
+
+<pre data-runnable data-title="comprehension.py" data-lang="python">years = [1941, 1962, None, 1964, None, 1940, 1981, None, 2099]
+
+# Solo gli anni validi (escludo None) — equivalente a un for + if
+solo_validi = [y for y in years if y is not None]
+print(solo_validi)
+
+# Conversione e filtro insieme
+quadrati_pari = [n*n for n in range(10) if n % 2 == 0]
+print(quadrati_pari)
+
+# Outlier? Filtriamoli
+plausibili = [y for y in solo_validi if y &lt;= 2025]
+print(plausibili)
+</pre>
+
+        <div class="quiz" data-id="q-comp">
+          <h4>Quale list comprehension produce <code>[1, 4, 9, 16, 25]</code>?</h4>
+          <ul class="quiz-options">
+            <li><code>[i for i in range(1, 6)]</code></li>
+            <li data-correct><code>[i*i for i in range(1, 6)]</code></li>
+            <li><code>[i**2 for i in range(0, 5)]</code></li>
+            <li><code>[i*i for i in range(5)]</code></li>
+          </ul>
+          <div class="quiz-explain">
+            Servono i quadrati di 1, 2, 3, 4, 5: <code>range(1, 6)</code> li genera, e
+            <code>i*i</code> (o equivalentemente <code>i**2</code>) li eleva al quadrato.
+            <code>range(5)</code> parte da 0, quindi includerebbe lo 0.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 14. RIEPILOGO ============== -->
+      <section id="sec-finale">
+        <h2 class="section-title">14. Riepilogo &amp; sfida finale</h2>
+        <p>
+          In questa lezione hai visto tutti gli elementi essenziali di Python che ci
+          serviranno: tipi di dato, strutture dati native, controllo del flusso, funzioni,
+          moduli, e i primi grafici. Da qui in poi potremo concentrarci sulla statistica e
+          la data science vere e proprie.
+        </p>
+
+        <div class="quiz" data-id="q-riepilogo">
+          <h4>Quale dei seguenti tipi è <strong>mutabile</strong>?</h4>
+          <ul class="quiz-options">
+            <li><code>str</code></li>
+            <li><code>tuple</code></li>
+            <li data-correct><code>list</code></li>
+            <li><code>int</code></li>
+          </ul>
+          <div class="quiz-explain">
+            Solo le liste (e i dizionari, e i set) si possono modificare in place. Le
+            stringhe e le tuple sono <em>immutabili</em>.
+          </div>
+        </div>
+
+        <div class="quiz" data-id="q-stile">
+          <h4>Qual è il modo più idiomatico in Python per scambiare due variabili
+            <code>a</code> e <code>b</code>?</h4>
+          <ul class="quiz-options">
+            <li><code>tmp = a; a = b; b = tmp</code></li>
+            <li data-correct><code>a, b = b, a</code></li>
+            <li><code>swap(a, b)</code></li>
+            <li><code>a = a + b; b = a - b; a = a - b</code></li>
+          </ul>
+          <div class="quiz-explain">
+            Lo scambio sfrutta il <em>tuple unpacking</em>: a destra Python costruisce la
+            tupla <code>(b, a)</code>, e a sinistra la "spacchetta" nelle variabili.
+          </div>
+        </div>
+
+        <div class="exercise">
+          <h4>Sfida finale — Top 3 supereroi più alti</h4>
+          <p>
+            Dato l'elenco di supereroi qui sotto (lista di dizionari), scrivi del codice che:
+          </p>
+          <ol>
+            <li>filtri quelli con altezza non nulla;</li>
+            <li>li ordini in modo decrescente per altezza;</li>
+            <li>stampi i primi 3 nel formato <code>"Nome — 198 cm"</code>.</li>
+          </ol>
+          <p class="hint">
+            Suggerimenti: usa <code>sorted(..., key=..., reverse=True)</code> e una list
+            comprehension per il filtro. Poi un <code>for</code> per stampare i primi tre.
+          </p>
+
+<pre data-runnable data-title="sfida_finale.py" data-lang="python">heroes = [
+    {'name': 'Iron Man',   'height': 198.51},
+    {'name': 'Spider-Man', 'height': 178.0},
+    {'name': 'Hulk',       'height': 244.0},
+    {'name': 'Mystique',   'height': None},
+    {'name': 'Thor',       'height': 198.0},
+    {'name': 'Wolverine',  'height': 160.0},
+    {'name': 'Groot',      'height': 213.0},
+    {'name': 'Vision',     'height': None},
+]
+
+# Tua soluzione qui sotto
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-title="soluzione_sfida.py" data-lang="python">heroes = [
+    {'name': 'Iron Man',   'height': 198.51},
+    {'name': 'Spider-Man', 'height': 178.0},
+    {'name': 'Hulk',       'height': 244.0},
+    {'name': 'Mystique',   'height': None},
+    {'name': 'Thor',       'height': 198.0},
+    {'name': 'Wolverine',  'height': 160.0},
+    {'name': 'Groot',      'height': 213.0},
+    {'name': 'Vision',     'height': None},
+]
+
+con_altezza = [h for h in heroes if h['height'] is not None]
+ordinati = sorted(con_altezza, key=lambda h: h['height'], reverse=True)
+
+for h in ordinati[:3]:
+    print(f"{h['name']} — {round(h['height'])} cm")
+</pre>
+          </div>
+        </div>
+
+        <div class="callout tip" style="margin-top: 24px;">
+          <strong>Cosa abbiamo appreso?</strong>
+          <ul style="margin: 8px 0 0;">
+            <li>I tipi semplici di Python e gli operatori per combinarli.</li>
+            <li>Le quattro strutture dati native: <em>list, tuple, set, dict</em>.</li>
+            <li>Le strutture di controllo <code>if/elif/else</code> e <code>for</code>, e l'uso dell'indentazione.</li>
+            <li>Definizione di funzioni e uso delle <em>lambda</em>.</li>
+            <li>Importazione di moduli e convenzioni (es. <code>import numpy as np</code>).</li>
+            <li>Visualizzazione base con matplotlib.</li>
+            <li>Pattern per leggere file CSV.</li>
+            <li>Le <em>list comprehension</em> per scrivere codice compatto e leggibile.</li>
+          </ul>
+        </div>
+
+        <p style="margin-top: 30px;">
+          <a href="index.html" class="btn">← Torna all'indice</a>
+        </p>
+      </section>
+
+      <footer class="footer">
+        Contenuti basati su <em>D. Malchiodi, Superhero Data Science Vol. 1</em> — CC BY-NC-ND 4.0.<br />
+        Eseguito interamente nel tuo browser via <a href="https://pyodide.org/" target="_blank" rel="noopener">Pyodide</a>.
+      </footer>
+    </main>
+  </div>
+
+  <script src="assets/app.js" defer></script>
+</body>
+</html>

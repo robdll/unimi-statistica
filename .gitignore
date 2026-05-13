@@ -1,0 +1,8 @@
+.DS_Store
+*.log
+node_modules/
+.vscode/
+.idea/
+
+# Eventuale file di test temporaneo lasciato dall'utente
+test.html
