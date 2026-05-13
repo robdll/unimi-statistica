@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L11 · Distribuzione geometrica — Interactive Learning</title>
+  <meta name="description" content="Distribuzione geometrica: PMF, CDF, valore atteso, varianza e assenza di memoria." />
+  <link rel="stylesheet" href="assets/styles.css" />
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">SD</div>
+        <div>
+          <strong>Lezione 11</strong>
+          <small>Distribuzione geometrica</small>
+        </div>
+      </div>
+
+      <p style="margin: 0 0 8px;">
+        <a href="index.html" style="font-size:0.85rem;">← Torna all'indice</a>
+      </p>
+
+      <h2>In questa lezione</h2>
+      <ul class="toc">
+        <li><a href="#sec-bernoulli">1. Bernoulli, il punto di partenza</a></li>
+        <li><a href="#sec-def">2. Definizione</a></li>
+        <li><a href="#sec-simul">3. Simulare la geometrica</a></li>
+        <li><a href="#sec-pmf">4. Funzione di massa di probabilità</a></li>
+        <li><a href="#sec-ev">5. Valore atteso e varianza</a></li>
+        <li><a href="#sec-cdf">6. Funzione di ripartizione</a></li>
+        <li><a href="#sec-memo">7. Assenza di memoria</a></li>
+        <li><a href="#sec-finale">8. Esercizi finali</a></li>
+      </ul>
+    </aside>
+
+    <main class="main">
+
+      <div class="theme-toggle">
+        <button class="btn ghost" type="button">🌙 Tema scuro</button>
+      </div>
+
+      <section class="hero">
+        <h1>L11 · Distribuzione geometrica</h1>
+        <p>
+          Quanti tentativi falliti devo affrontare prima del mio primo successo?
+          La distribuzione <em>geometrica</em> è la risposta probabilistica a questa
+          domanda: nasce da una sequenza di lanci «alla Bernoulli» (successo/fallimento
+          indipendenti) e ha una proprietà sorprendente: «non ha memoria».
+        </p>
+        <div class="meta">
+          <span>≈ 45–60 minuti</span>
+          <span>9 quiz</span>
+          <span>5 esercizi</span>
+          <span>numpy, matplotlib, scipy.stats</span>
+        </div>
+        <div class="progress-wrap" title="Progresso quiz">
+          <div class="progress-bar"></div>
+        </div>
+      </section>
+
+      <!-- ============== 1. BERNOULLI ============== -->
+      <section id="sec-bernoulli">
+        <h2 class="section-title">1. Bernoulli, il punto di partenza</h2>
+        <p>
+          Un <strong>esperimento bernoulliano</strong> di parametro \(p \in [0, 1]\)
+          è il più semplice esperimento aleatorio possibile: due soli esiti,
+          chiamati convenzionalmente «successo» (probabilità \(p\)) e «fallimento»
+          (probabilità \(1-p\)).
+        </p>
+        <p>
+          Lanciare una moneta equa equivale a un esperimento bernoulliano con
+          \(p = 0.5\); estrarre un asso da un mazzo di 52 carte è un Bernoulli con
+          \(p = 4/52 \approx 0.077\).
+        </p>
+
+<pre data-runnable data-title="bernoulli.py" data-lang="python">import random as rnd
+
+def bernoulli(p):
+    """Restituisce 1 (successo) con probabilità p, altrimenti 0."""
+    return 1 if rnd.random() &lt; p else 0
+
+rnd.seed(42)
+prove = [bernoulli(0.3) for _ in range(20)]
+print("20 prove con p=0.3:", prove)
+print(f"Frequenza di successi: {sum(prove)/len(prove):.2f} (atteso {0.3:.2f})")
+</pre>
+      </section>
+
+      <!-- ============== 2. DEFINIZIONE ============== -->
+      <section id="sec-def">
+        <h2 class="section-title">2. Definizione</h2>
+        <p>
+          Sia \(X\) la variabile aleatoria che conta il numero di
+          <strong>insuccessi</strong> prima del primo successo in una sequenza di
+          esperimenti bernoulliani indipendenti, ciascuno di parametro \(p\). Allora
+          \(X \sim \mathrm{Geom}(p)\) ha supporto \(\{0, 1, 2, \dots\}\) e PMF
+        </p>
+        <p>\[ f_X(i; p) = p (1 - p)^i \quad \text{per } i = 0, 1, 2, \dots \]</p>
+        <p>
+          Il parametro deve essere \(p \in (0, 1]\): se \(p = 0\) il successo non
+          arriva mai; se \(p = 1\) il primo esperimento è già un successo, quindi
+          \(X\) vale sempre 0 (caso degenere).
+        </p>
+
+        <div class="callout warning">
+          <strong>Convenzione importante!</strong> Esistono due definizioni in
+          letteratura (e nelle librerie):
+          <ul>
+            <li><em>Conta gli insuccessi</em> (supporto \(\{0, 1, 2, \dots\}\)) —
+              quella adottata qui e nel notebook;</li>
+            <li><em>Conta i tentativi totali</em>, successo incluso (supporto
+              \(\{1, 2, 3, \dots\}\)) — quella usata da
+              <code>scipy.stats.geom</code> e in molti testi inglesi.</li>
+          </ul>
+          Differiscono per uno: \(X_{\text{tentativi}} = X_{\text{insuccessi}} + 1\).
+          Cambiano anche valore atteso e varianza: presta attenzione alla convenzione!
+        </div>
+
+        <div class="quiz" data-id="q-def-1">
+          <h4>Con la convenzione «numero di insuccessi prima del primo successo»,
+            qual è il supporto di \(X\)?</h4>
+          <ul class="quiz-options">
+            <li>\(\{1, 2, 3, \dots\}\)</li>
+            <li data-correct>\(\{0, 1, 2, \dots\}\)</li>
+            <li>\(\{-1, 0, 1, 2, \dots\}\)</li>
+            <li>\([0, 1]\)</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ============== 3. SIMULAZIONE ============== -->
+      <section id="sec-simul">
+        <h2 class="section-title">3. Simulare la geometrica</h2>
+        <p>
+          La definizione operativa suggerisce subito un algoritmo: continua a lanciare
+          finché non esce successo, e conta i fallimenti incontrati strada facendo.
+        </p>
+
+<pre data-runnable data-title="simul_geom.py" data-lang="python">import random as rnd
+
+def geom(p):
+    assert 0 &lt; p &lt;= 1, f"{p} non è un parametro valido per la geometrica."
+    i = 0
+    while rnd.random() &gt;= p:
+        i += 1
+    return i
+
+rnd.seed(0)
+campioni = [geom(0.3) for _ in range(20)]
+print("20 valori da Geom(0.3):", campioni)
+print(f"\nMedia campionaria : {sum(campioni)/len(campioni):.3f}")
+print(f"Valore atteso teorico (1-p)/p = {(1 - 0.3)/0.3:.3f}")
+</pre>
+
+        <p>
+          La libreria <code>scipy.stats</code> ha una versione molto più efficiente
+          (e usa la convenzione «conta tentativi» partendo da 1). Per allinearci
+          alla nostra definizione, basta sottrarre 1.
+        </p>
+
+<pre data-runnable data-pkgs="scipy" data-title="scipy_geom.py" data-lang="python">from scipy.stats import geom as geom_sc
+import numpy as np
+
+p = 0.3
+np.random.seed(7)
+# scipy: supporto {1,2,...}; sottraiamo 1 per avere {0,1,...}
+campioni = geom_sc(p).rvs(size=10000) - 1
+
+print(f"Media campionaria : {campioni.mean():.4f}")
+print(f"Atteso teorico    : {(1-p)/p:.4f}")
+print(f"\nVarianza campionaria : {campioni.var():.4f}")
+print(f"Atteso teorico       : {(1-p)/p**2:.4f}")
+</pre>
+      </section>
+
+      <!-- ============== 4. PMF ============== -->
+      <section id="sec-pmf">
+        <h2 class="section-title">4. Funzione di massa di probabilità</h2>
+        <p>
+          La PMF \(f_X(i; p) = p(1-p)^i\) decresce in modo geometrico. Più
+          \(p\) è grande, più la massa si concentra sui valori piccoli: il primo
+          successo è probabile arrivi presto.
+        </p>
+        <p>
+          Verifichiamo che la somma totale faccia 1, sfruttando la
+          <em>serie geometrica</em> \(\sum_{i=0}^{\infty} \alpha^i = \tfrac{1}{1-\alpha}\)
+          per \(|\alpha| &lt; 1\):
+        </p>
+        <p>\[ \sum_{i=0}^{\infty} p (1-p)^i = p \cdot \frac{1}{1-(1-p)} = \frac{p}{p} = 1. \]</p>
+        <p>È proprio da qui che la distribuzione prende il nome.</p>
+
+<pre data-runnable data-matplotlib="true" data-pkgs="numpy" data-title="pmf_plot.py" data-lang="python">import numpy as np
+import matplotlib.pyplot as plt
+
+def geom_pmf(i, p):
+    return p * (1 - p) ** i if i &gt;= 0 and i == int(i) else 0
+
+ps = [0.2, 0.5, 0.8]
+xs = np.arange(0, 12)
+
+fig, axes = plt.subplots(1, 3, figsize=(11, 3.4), sharey=True)
+for ax, p in zip(axes, ps):
+    ys = [geom_pmf(int(x), p) for x in xs]
+    ax.vlines(xs, 0, ys, color='steelblue')
+    ax.plot(xs, ys, 'o', color='steelblue')
+    ax.set_title(f"p = {p}")
+    ax.set_xlabel("i")
+    ax.set_ylim(0, 1)
+axes[0].set_ylabel("P(X = i)")
+plt.suptitle("PMF della Geometrica per diversi valori di p")
+plt.tight_layout()
+plt.show()
+</pre>
+
+        <div class="callout tip">
+          <strong>Verifica numerica.</strong> Sommare i primi termini della PMF deve
+          dare un valore prossimo a 1 (e tendere a 1 al crescere di \(N\)).
+        </div>
+
+<pre data-runnable data-title="pmf_sum.py" data-lang="python">def geom_pmf(i, p):
+    return p * (1 - p) ** i if i &gt;= 0 and i == int(i) else 0
+
+p = 0.3
+for N in [5, 10, 20, 50, 100]:
+    s = sum(geom_pmf(i, p) for i in range(N + 1))
+    print(f"Somma dei primi {N+1:&gt;3} termini: {s:.6f}")
+</pre>
+
+        <div class="quiz" data-id="q-pmf-1">
+          <h4>Con \(p = 0.3\), qual è la probabilità di osservare il primo successo
+            esattamente al terzo tentativo (cioè dopo 2 insuccessi)?</h4>
+          <ul class="quiz-options">
+            <li>\(0.3\)</li>
+            <li data-correct>\(0.3 \cdot 0.7^{2} = 0.147\)</li>
+            <li>\(0.7^{3} = 0.343\)</li>
+            <li>\(0.3 \cdot 0.7^{3} = 0.103\)</li>
+          </ul>
+          <div class="quiz-explain">
+            \(X = 2\) (due insuccessi prima del successo). \(f(2; 0.3) = 0.3 \cdot 0.7^2 = 0.147\).
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 5. EV/VAR ============== -->
+      <section id="sec-ev">
+        <h2 class="section-title">5. Valore atteso e varianza</h2>
+        <p>
+          Per la Geometrica «conta insuccessi» di parametro \(p\):
+        </p>
+        <p>\[ \mathrm E(X) = \frac{1-p}{p}, \qquad \mathrm{Var}(X) = \frac{1-p}{p^2}. \]</p>
+
+        <details>
+          <summary>Mostra la dimostrazione del valore atteso</summary>
+          <p>
+            Il punto chiave è il lemma: per \(\alpha \in (-1, 1)\),
+            \(\sum_{i=0}^{\infty} i \alpha^i = \dfrac{\alpha}{(1-\alpha)^2}\).
+            Si dimostra derivando la serie geometrica termine a termine. Poi:
+          </p>
+          <p>\[ \mathrm E(X) = \sum_{i=0}^{\infty} i \cdot p (1-p)^i = p \cdot \frac{1-p}{(1-(1-p))^2} = p \cdot \frac{1-p}{p^2} = \frac{1-p}{p}. \]</p>
+        </details>
+
+<pre data-runnable data-matplotlib="true" data-pkgs="numpy" data-title="ev_var_plot.py" data-lang="python">import numpy as np
+import matplotlib.pyplot as plt
+
+p = np.arange(0.01, 1.01, 0.01)
+EX  = (1 - p) / p
+VarX = (1 - p) / p ** 2
+
+fig, axes = plt.subplots(1, 2, figsize=(10, 3.6))
+axes[0].plot(p, EX, color='steelblue')
+axes[0].set_ylim(0, 50); axes[0].set_xlabel("p"); axes[0].set_ylabel("E(X)")
+axes[0].set_title("Valore atteso (1-p)/p")
+
+axes[1].plot(p, VarX, color='crimson')
+axes[1].set_ylim(0, 50); axes[1].set_xlabel("p"); axes[1].set_ylabel("Var(X)")
+axes[1].set_title("Varianza (1-p)/p²")
+
+plt.tight_layout(); plt.show()
+</pre>
+
+        <div class="callout info">
+          <strong>Interpretazione.</strong> Quando \(p\) è piccolo, il primo successo
+          tarda molto: l'attesa cresce come \(1/p\) e la varianza come \(1/p^2\).
+          Quando \(p \to 1\), entrambe vanno a zero: il primo successo arriva
+          quasi sicuramente al primo colpo.
+        </div>
+
+        <div class="quiz" data-id="q-ev-1">
+          <h4>Con \(p = 0.1\), quanti insuccessi mi aspetto in media prima del primo successo?</h4>
+          <ul class="quiz-options">
+            <li>0.1</li>
+            <li>1</li>
+            <li data-correct>9</li>
+            <li>10</li>
+          </ul>
+          <div class="quiz-explain">
+            \(\mathrm E(X) = (1-p)/p = 0.9/0.1 = 9\) insuccessi (il successo è al 10° tentativo).
+          </div>
+        </div>
+
+        <div class="quiz" data-id="q-ev-2">
+          <h4>Con \(p = 0.5\), valore atteso e deviazione standard sono…</h4>
+          <ul class="quiz-options">
+            <li>\(\mathrm E = 1\), \(\sigma = 1\)</li>
+            <li data-correct>\(\mathrm E = 1\), \(\sigma = \sqrt{2} \approx 1.414\)</li>
+            <li>\(\mathrm E = 0.5\), \(\sigma = 0.5\)</li>
+            <li>\(\mathrm E = 2\), \(\sigma = 2\)</li>
+          </ul>
+          <div class="quiz-explain">
+            \(\mathrm E(X) = (1-p)/p = 1\); \(\mathrm{Var}(X) = (1-p)/p^2 = 2\); \(\sigma = \sqrt{2}\).
+          </div>
+        </div>
+
+<pre data-runnable data-matplotlib="true" data-pkgs="numpy" data-title="pmf_with_band.py" data-lang="python">import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+
+def gr_geom_pmf(p):
+    fig, ax = plt.subplots(figsize=(7.5, 3.6))
+    x = np.arange(0, 15)
+    pmf = p * (1 - p) ** x
+
+    avg   = (1 - p) / p
+    stdev = ((1 - p) ** 0.5) / p
+    ax.add_patch(patches.Rectangle(
+        (avg - stdev, 0.95), 2 * stdev, 0.05, edgecolor='None', facecolor='green', alpha=0.6
+    ))
+    ax.plot([avg, avg], [0.9, 1.0], color='green')
+
+    ax.vlines(x, 0, pmf, color='steelblue')
+    ax.plot(x, pmf, 'o', color='steelblue')
+    ax.set_ylim(0, 1); ax.set_xlim(-1, 16)
+    ax.set_title(f"PMF di Geom({p}); banda verde = ±1σ attorno a E(X)")
+    plt.tight_layout(); plt.show()
+
+gr_geom_pmf(0.3)
+</pre>
+      </section>
+
+      <!-- ============== 6. CDF ============== -->
+      <section id="sec-cdf">
+        <h2 class="section-title">6. Funzione di ripartizione</h2>
+        <p>
+          La probabilità di superare \(n\) insuccessi è facile da calcolare:
+        </p>
+        <p>\[ \mathrm P(X &gt; n) = \sum_{i=n+1}^{\infty} p (1-p)^i = (1-p)^{n+1}. \]</p>
+        <p>Quindi la CDF, per \(n \in \mathbb N\), è</p>
+        <p>\[ F_X(n; p) = 1 - (1-p)^{n+1}. \]</p>
+        <p>
+          Per un generico \(x \ge 0\), basta sostituire \(n = \lfloor x \rfloor\):
+        </p>
+        <p>\[ F_X(x; p) = \big(1 - (1-p)^{\lfloor x \rfloor + 1}\big)\, \mathbb{1}_{x \ge 0}. \]</p>
+
+<pre data-runnable data-matplotlib="true" data-pkgs="numpy" data-title="cdf_plot.py" data-lang="python">import numpy as np
+import matplotlib.pyplot as plt
+
+def geom_cdf(x, p):
+    if x &lt; 0:
+        return 0
+    return 1 - (1 - p) ** (int(x) + 1)
+
+p = 0.5
+xs = np.arange(-2, 11, 0.1)
+ys = [geom_cdf(x, p) for x in xs]
+
+plt.step(xs, ys, color='steelblue')
+plt.title(f"CDF di Geom({p})")
+plt.xlim(-2, 10); plt.ylim(-0.05, 1.05)
+plt.xlabel("x"); plt.ylabel("F(x)")
+plt.grid(alpha=0.3); plt.tight_layout(); plt.show()
+</pre>
+
+        <div class="quiz" data-id="q-cdf-1">
+          <h4>Con \(p = 0.4\), \(\mathrm P(X \le 2)\) vale…</h4>
+          <ul class="quiz-options">
+            <li>\(0.4\)</li>
+            <li>\(1 - 0.6^{2} = 0.64\)</li>
+            <li data-correct>\(1 - 0.6^{3} = 0.784\)</li>
+            <li>\(0.6^{3} = 0.216\)</li>
+          </ul>
+          <div class="quiz-explain">
+            \(F(2; p) = 1 - (1-p)^{2+1} = 1 - 0.6^3 = 0.784\). Equivale a dire che con
+            probabilità ≈78% il primo successo arriva entro il terzo tentativo.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 7. MEMORYLESSNESS ============== -->
+      <section id="sec-memo">
+        <h2 class="section-title">7. Assenza di memoria</h2>
+        <p>
+          La distribuzione geometrica è l'unica distribuzione discreta a possedere
+          la proprietà di <strong>assenza di memoria</strong>:
+        </p>
+        <p>\[ \mathrm P(X \ge x + y \mid X \ge x) = \mathrm P(X \ge y), \quad \forall x, y \ge 0. \]</p>
+        <p>
+          In parole: dopo \(x\) insuccessi consecutivi, l'attesa ricomincia da zero —
+          la moneta non «ricorda» quanto ha già perso e non è più «in debito» di
+          successi. Il giocatore d'azzardo che pensa «sono in serie nera, ora deve
+          per forza vincere» commette il <em>gambler's fallacy</em>.
+        </p>
+
+        <details>
+          <summary>Mostra la dimostrazione</summary>
+          <p>
+            Notiamo che \(\mathrm P(X \ge x) = (1-p)^{\lfloor x \rfloor}\) (la probabilità
+            che i primi \(\lfloor x \rfloor\) tentativi siano tutti falliti). Allora
+          </p>
+          <p>\[ \mathrm P(X \ge x+y \mid X \ge x) = \frac{(1-p)^{\lfloor x \rfloor + \lfloor y \rfloor}}{(1-p)^{\lfloor x \rfloor}} = (1-p)^{\lfloor y \rfloor} = \mathrm P(X \ge y). \]</p>
+        </details>
+
+<pre data-runnable data-pkgs="numpy" data-title="memoryless.py" data-lang="python">import numpy as np
+
+p = 0.3
+np.random.seed(1)
+# Simulo molte realizzazioni di Geom(p)
+N = 200_000
+campioni = np.random.geometric(p, size=N) - 1   # numpy.geometric usa supporto {1,2,...}
+
+x, y = 5, 3
+mask = campioni &gt;= x
+cond = (campioni[mask] &gt;= x + y).mean()
+no_cond = (campioni &gt;= y).mean()
+
+print(f"P(X >= {x+y} | X >= {x}) ≈ {cond:.4f}")
+print(f"P(X >= {y})              ≈ {no_cond:.4f}")
+print(f"Teoria: (1-p)^{y} = {(1-p)**y:.4f}")
+</pre>
+
+        <div class="quiz" data-id="q-memo-1">
+          <h4>Lancio una moneta truccata con \(p = 0.1\) di testa. Sono uscite 9 croci
+            di seguito. Qual è la probabilità che la decima sia testa?</h4>
+          <ul class="quiz-options">
+            <li>1.00 — «deve» uscire testa</li>
+            <li>0.90 — più alta del 0.1</li>
+            <li data-correct>0.10 — non c'è memoria</li>
+            <li>Dipende dall'umore della moneta</li>
+          </ul>
+          <div class="quiz-explain">
+            Le prove sono indipendenti: la moneta non sa cosa è successo prima.
+            Resta sempre 0.1.
+          </div>
+        </div>
+
+        <div class="callout warning">
+          <strong>Scope dell'assenza di memoria.</strong> Vale solo per la
+          geometrica <em>e</em> la sua sorella continua, l'esponenziale. Quasi
+          tutte le altre distribuzioni discrete (binomiale, Poisson, ipergeometrica,
+          …) <strong>hanno memoria</strong>.
+        </div>
+      </section>
+
+      <!-- ============== 8. ESERCIZI FINALI ============== -->
+      <section id="sec-finale">
+        <h2 class="section-title">8. Esercizi finali</h2>
+
+        <div class="exercise">
+          <h4>Esercizio 1 — Quanti tentativi prima di azzeccare il dado?</h4>
+          <p>
+            Lancio un dado a 6 facce. Quanti lanci falliti mi aspetto in media prima
+            di ottenere un 6? Qual è la probabilità di ottenerlo entro 4 lanci?
+          </p>
+
+<pre data-runnable data-title="esercizio1.py" data-lang="python"># Tua soluzione qui
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-title="soluzione1.py" data-lang="python">p = 1/6
+EX = (1 - p) / p
+print(f"Insuccessi attesi prima del 6: E(X) = {EX:.3f}")
+print(f"Cioè il 6 mediamente al lancio numero {EX + 1:.3f}")
+
+# 'entro 4 lanci' = al massimo 3 insuccessi (X &lt;= 3)
+P_entro_4 = 1 - (1 - p) ** 4
+print(f"\nP(6 entro 4 lanci) = 1 - (5/6)^4 = {P_entro_4:.4f}")
+</pre>
+          </div>
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 2 — Implementa la PMF e verifica</h4>
+          <p>
+            Implementa <code>geom_pmf(i, p)</code>, plotta la PMF per
+            \(p \in \{0.2, 0.5, 0.8\}\) e verifica che la somma dei primi 100
+            termini sia ≈ 1.
+          </p>
+
+<pre data-runnable data-matplotlib="true" data-pkgs="numpy" data-title="esercizio2.py" data-lang="python"># Tua soluzione qui
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-matplotlib="true" data-pkgs="numpy" data-title="soluzione2.py" data-lang="python">import numpy as np
+import matplotlib.pyplot as plt
+
+def geom_pmf(i, p):
+    return p * (1 - p) ** i if i &gt;= 0 and i == int(i) else 0
+
+xs = np.arange(0, 15)
+fig, ax = plt.subplots(figsize=(8, 3.6))
+for p, color in zip([0.2, 0.5, 0.8], ['#4c78a8', '#f58518', '#54a24b']):
+    ys = [geom_pmf(int(x), p) for x in xs]
+    ax.plot(xs, ys, 'o-', label=f"p={p}", color=color)
+    s = sum(geom_pmf(i, p) for i in range(100))
+    print(f"Somma 0..99 con p={p}: {s:.6f}")
+
+ax.set_xlabel("i"); ax.set_ylabel("P(X = i)")
+ax.set_title("PMF della Geometrica")
+ax.legend(); plt.tight_layout(); plt.show()
+</pre>
+          </div>
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 3 — Verifica empirica di valore atteso e varianza</h4>
+          <p>
+            Simula 100 000 valori da \(\mathrm{Geom}(0.25)\) e confronta media e
+            varianza campionarie con i valori teorici.
+          </p>
+
+<pre data-runnable data-pkgs="numpy" data-title="esercizio3.py" data-lang="python"># Tua soluzione qui
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-pkgs="numpy" data-title="soluzione3.py" data-lang="python">import numpy as np
+
+p = 0.25
+np.random.seed(0)
+campioni = np.random.geometric(p, size=100_000) - 1   # supporto {0,1,2,...}
+
+print(f"Media campionaria   : {campioni.mean():.4f}")
+print(f"Atteso teorico      : {(1-p)/p:.4f}")
+print(f"\nVarianza campionaria: {campioni.var():.4f}")
+print(f"Atteso teorico      : {(1-p)/p**2:.4f}")
+</pre>
+          </div>
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 4 — Verifica empirica dell'assenza di memoria</h4>
+          <p>
+            Simula \(\mathrm{Geom}(0.2)\) e stima \(\mathrm P(X \ge 10 \mid X \ge 7)\).
+            Confrontala con \(\mathrm P(X \ge 3)\) e con la formula teorica
+            \((1-p)^3\).
+          </p>
+
+<pre data-runnable data-pkgs="numpy" data-title="esercizio4.py" data-lang="python"># Tua soluzione qui
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-pkgs="numpy" data-title="soluzione4.py" data-lang="python">import numpy as np
+
+p = 0.2
+N = 500_000
+np.random.seed(42)
+X = np.random.geometric(p, size=N) - 1
+
+cond = (X[X &gt;= 7] &gt;= 10).mean()
+marg = (X &gt;= 3).mean()
+teoria = (1 - p) ** 3
+
+print(f"P(X &gt;= 10 | X &gt;= 7) ≈ {cond:.4f}")
+print(f"P(X &gt;= 3)            ≈ {marg:.4f}")
+print(f"Teoria (1-p)^3      = {teoria:.4f}")
+</pre>
+          </div>
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 5 — Quanti tentativi per essere ragionevolmente sicuri?</h4>
+          <p>
+            Trova il più piccolo \(n\) tale che, con \(p = 0.05\), la probabilità di
+            ottenere almeno un successo entro \(n\) tentativi sia almeno il 95%.
+          </p>
+          <p class="hint">
+            Suggerimento: \(\mathrm P(\text{almeno 1 successo in } n \text{ tentativi}) = 1 - (1-p)^n\).
+            Risolvi rispetto a \(n\).
+          </p>
+
+<pre data-runnable data-title="esercizio5.py" data-lang="python"># Tua soluzione qui
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-title="soluzione5.py" data-lang="python">import math
+
+p = 0.05
+target = 0.95
+
+# 1 - (1-p)^n &gt;= target  ⇔  n &gt;= log(1-target) / log(1-p)
+n = math.ceil(math.log(1 - target) / math.log(1 - p))
+print(f"n minimo = {n}")
+print(f"Verifica: P(>=1 successo in {n}) = {1 - (1 - p)**n:.4f}")
+</pre>
+          </div>
+        </div>
+
+        <h3>Riepilogo</h3>
+        <ul>
+          <li><strong>Definizione</strong>: \(X \sim \mathrm{Geom}(p)\) conta gli insuccessi prima del primo successo.</li>
+          <li><strong>PMF</strong>: \(f_X(i; p) = p(1-p)^i\), \(i = 0, 1, 2, \dots\).</li>
+          <li><strong>CDF</strong>: \(F_X(n; p) = 1 - (1-p)^{n+1}\).</li>
+          <li><strong>Valore atteso</strong>: \(\mathrm E(X) = (1-p)/p\).</li>
+          <li><strong>Varianza</strong>: \(\mathrm{Var}(X) = (1-p)/p^2\).</li>
+          <li><strong>Assenza di memoria</strong>: la geometrica «dimentica» il passato.</li>
+          <li>Attenzione alle <em>due convenzioni</em> in giro per la letteratura: insuccessi vs tentativi.</li>
+        </ul>
+
+        <p style="margin-top: 24px;">
+          Prossima fermata:
+          <strong><a href="lezione-12.html">L12 — Ripasso</a></strong>
+          (un viaggio panoramico per legare i fili di tutto il corso).
+        </p>
+      </section>
+
+      <footer class="footer">
+        L11 · Distribuzione geometrica — Interactive Learning · Superhero Data Science
+      </footer>
+    </main>
+  </div>
+
+  <script src="assets/app.js" defer></script>
+</body>
+</html>

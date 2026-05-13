@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L03 · Dati e frequenze — Interactive Learning</title>
+  <meta name="description" content="Tipi di dati, frequenze assolute/relative/cumulate, istogrammi, diagrammi di Pareto e frequenze congiunte." />
+  <link rel="stylesheet" href="assets/styles.css" />
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">SD</div>
+        <div>
+          <strong>Lezione 03</strong>
+          <small>Dati e frequenze</small>
+        </div>
+      </div>
+
+      <p style="margin: 0 0 8px;">
+        <a href="index.html" style="font-size:0.85rem;">← Torna all'indice</a>
+      </p>
+
+      <h2>In questa lezione</h2>
+      <ul class="toc">
+        <li><a href="#sec-tipi">1. Tipi di dati</a></li>
+        <li><a href="#sec-freq">2. Frequenze assolute e relative</a></li>
+        <li><a href="#sec-viz">3. Visualizzare le frequenze</a>
+          <ul class="toc-sub">
+            <li><a href="#sec-bar">3.1 Grafici a barre</a></li>
+            <li><a href="#sec-pie">3.2 Diagrammi a torta</a></li>
+            <li><a href="#sec-stick">3.3 Diagrammi a bastoncini</a></li>
+            <li><a href="#sec-hist">3.4 Istogrammi</a></li>
+          </ul>
+        </li>
+        <li><a href="#sec-cum">4. Frequenze cumulate &amp; ECDF</a></li>
+        <li><a href="#sec-pareto">5. Diagrammi di Pareto</a></li>
+        <li><a href="#sec-congiunte">6. Frequenze congiunte e marginali</a></li>
+        <li><a href="#sec-scatter">7. Scatter, covarianza e correlazione</a></li>
+        <li><a href="#sec-finale">8. Riepilogo &amp; sfida finale</a></li>
+      </ul>
+    </aside>
+
+    <main class="main">
+
+      <div class="theme-toggle">
+        <button class="btn ghost" type="button">🌙 Tema scuro</button>
+      </div>
+
+      <section class="hero">
+        <h1>L03 · Dati e frequenze</h1>
+        <p>
+          Prima di calcolare medie e deviazioni standard, bisogna capire <em>che tipo di
+          dati</em> stiamo trattando e come <em>contare</em> in modo strutturato. In questa
+          lezione: classificazione dei caratteri, frequenze (assolute, relative, cumulate,
+          congiunte), istogrammi, Pareto e diagrammi di dispersione.
+        </p>
+        <div class="meta">
+          <span>≈ 50–70 minuti</span>
+          <span>10 quiz</span>
+          <span>5 esercizi</span>
+          <span>Tante visualizzazioni</span>
+        </div>
+        <div class="progress-wrap" title="Progresso quiz">
+          <div class="progress-bar"></div>
+        </div>
+      </section>
+
+      <!-- ============== 1. TIPI DI DATI ============== -->
+      <section id="sec-tipi">
+        <h2 class="section-title">1. Tipi di dati</h2>
+        <p>
+          Una distinzione fondamentale separa i dati osservabili in due famiglie:
+        </p>
+        <ul>
+          <li><strong>Quantitativi</strong> — l'esito della misurazione è un numero (altezza,
+            peso, indice di forza);</li>
+          <li><strong>Qualitativi</strong> (o categorici) — l'esito è un'etichetta scelta in un
+            insieme finito (editore, colore degli occhi, livello di intelligenza).</li>
+        </ul>
+
+        <p>I dati qualitativi si dividono ulteriormente in:</p>
+        <ul>
+          <li><strong>Binari/booleani</strong>: due sole etichette non confrontabili (es.
+            <code>Gender</code> ∈ {M, F});</li>
+          <li><strong>Nominali</strong>: più etichette ma senza ordine (es. <code>Eye color</code>);</li>
+          <li><strong>Ordinali</strong>: esiste una relazione d'ordine sui valori (es.
+            <code>Intelligence</code> = low &lt; moderate &lt; average &lt; good &lt; high).</li>
+        </ul>
+
+        <p>I dati quantitativi possono essere:</p>
+        <ul>
+          <li><strong>Discreti</strong>: ha senso considerare un singolo valore (anno di prima
+            apparizione);</li>
+          <li><strong>Continui</strong>: tipicamente si ragiona in <em>intervalli</em> di valori
+            (peso, altezza).</li>
+        </ul>
+
+        <div class="callout info">
+          <strong>Caso ambiguo.</strong> L'anno di prima apparizione è espresso da un numero
+          intero ma indica <em>quando</em> è successo qualcosa: somme e divisioni perdono
+          significato. Spesso si tratta come ordinale, ma per gli istogrammi torna utile
+          considerarlo quantitativo.
+        </div>
+
+        <div class="quiz" data-id="q-tipi-1">
+          <h4>Il carattere <code>Intelligence</code> ∈ {low, moderate, average, good, high} è:</h4>
+          <ul class="quiz-options">
+            <li><code>quantitativo discreto</code></li>
+            <li><code>qualitativo nominale</code></li>
+            <li data-correct><code>qualitativo ordinale</code></li>
+            <li><code>qualitativo binario</code></li>
+          </ul>
+          <div class="quiz-explain">
+            I valori sono etichette ma esiste una <em>relazione d'ordine</em>
+            naturale: low &lt; moderate &lt; average &lt; good &lt; high. È quindi
+            qualitativo ordinale.
+          </div>
+        </div>
+
+        <div class="quiz" data-id="q-tipi-2">
+          <h4>Per il <strong>peso</strong> in chilogrammi (numeri reali), che cosa è più
+            sensato calcolare?</h4>
+          <ul class="quiz-options">
+            <li>La frequenza di ogni singolo valore osservato.</li>
+            <li data-correct>La frequenza di <em>intervalli</em> di valori (istogramma).</li>
+            <li>Solo la moda.</li>
+            <li>Niente, non si possono fare frequenze su numeri reali.</li>
+          </ul>
+          <div class="quiz-explain">
+            Quasi ogni misura precisa è unica nel dataset, quindi singole frequenze
+            risulterebbero tutte uguali a 1. È più informativo raggruppare in
+            sotto-intervalli e mostrare un istogramma.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 2. FREQUENZE ============== -->
+      <section id="sec-freq">
+        <h2 class="section-title">2. Frequenze assolute e relative</h2>
+        <p>
+          La <strong>frequenza assoluta</strong> di un valore è il numero di volte in cui
+          quel valore appare nel campione. La <strong>frequenza relativa</strong> è la
+          stessa quantità divisa per il totale: vive in <code>[0, 1]</code> e permette
+          confronti tra campioni di taglia diversa.
+        </p>
+
+        <p>
+          In pandas il metodo veloce è <code>value_counts()</code> su una Series, oppure
+          <code>pd.crosstab</code> se vuoi un DataFrame "tabella di frequenze" con
+          intestazioni personalizzate.
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="freq_basics.py" data-lang="python">HEROES_CSV = """\
+Name;Publisher;Eye color;Gender;Intelligence;Strength
+Iron Man;Marvel Comics;Blue;M;high;85
+Hulk;Marvel Comics;Green;M;moderate;100
+Batman;DC Comics;Blue;M;high;26
+Superman;DC Comics;Blue;M;good;100
+Wonder Woman;DC Comics;Blue;F;good;100
+Spider-Man;Marvel Comics;Hazel;M;high;55
+Wolverine;Marvel Comics;Blue;M;average;75
+Storm;Marvel Comics;Blue;F;average;30
+Thor;Marvel Comics;Blue;M;good;100
+Black Widow;Marvel Comics;Green;F;average;13
+Captain America;Marvel Comics;Blue;M;good;19
+Joker;DC Comics;Green;M;high;10
+Aquaman;DC Comics;Blue;M;moderate;85
+Catwoman;DC Comics;Green;F;average;14
+Flash;DC Comics;Green;M;moderate;26
+Cyborg;DC Comics;Brown;M;moderate;80
+Venom;Marvel Comics;Blue;M;moderate;85
+Doctor Strange;Marvel Comics;Grey;M;high;10
+Magneto;Marvel Comics;Blue;M;high;55
+Penguin;DC Comics;Blue;M;average;9
+"""
+import pandas as pd, io
+heroes = pd.read_csv(io.StringIO(HEROES_CSV), sep=';', index_col='Name')
+
+# 1) frequenze assolute con value_counts
+print("Publisher (assolute):")
+print(heroes['Publisher'].value_counts())
+print()
+
+# 2) tabella delle frequenze come DataFrame con crosstab
+tab = pd.crosstab(index=heroes['Publisher'],
+                  columns=['Frequenza assoluta'],
+                  colnames=[''])
+print("Crosstab:")
+print(tab)
+print()
+
+# 3) frequenze relative — basta normalize=True
+tab_rel = pd.crosstab(index=heroes['Publisher'],
+                      columns=['Frequenza relativa'],
+                      colnames=[''],
+                      normalize=True)
+print("Relative:")
+print(tab_rel.round(3))
+</pre>
+
+        <div class="callout tip">
+          <strong>Trick formattazione.</strong> Per visualizzare le percentuali con il
+          simbolo <code>%</code>, basta moltiplicare per 100, arrotondare e convertire
+          in stringa: <code>(tab_rel * 100).round(2).astype(str) + '%'</code>.
+        </div>
+
+        <h3>Cambiare l'ordine delle righe</h3>
+        <p>
+          Le tabelle di frequenza sono ordinate per indice (alfabetico, in caso di
+          stringhe). Per imporre un ordine custom usa <code>.loc</code> oppure
+          <code>.reindex</code>:
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="reindex_freq.py" data-lang="python">import pandas as pd
+gender_freq = pd.crosstab(index=pd.Series(['M', 'F', 'M', 'M', 'F', 'M'], name='Gender'),
+                          columns=['Abs. freq.'],
+                          colnames=[''])
+print("Default (alfabetico):")
+print(gender_freq)
+print()
+
+print("Ordine custom (M prima di F):")
+print(gender_freq.loc[['M', 'F']])
+</pre>
+
+        <div class="quiz" data-id="q-freq-1">
+          <h4>Per quale motivo le frequenze <strong>relative</strong> sono spesso preferibili
+            alle assolute?</h4>
+          <ul class="quiz-options">
+            <li>Perché sono numeri interi e più leggibili.</li>
+            <li data-correct>Perché variano sempre in <code>[0, 1]</code>, quindi sono
+              confrontabili anche tra campioni di taglie diverse.</li>
+            <li>Perché si calcolano più velocemente.</li>
+            <li>Perché evitano valori mancanti.</li>
+          </ul>
+          <div class="quiz-explain">
+            Le frequenze assolute non hanno un massimo a priori: «80 osservazioni»
+            potrebbe essere tanto o pochissimo. Le relative hanno scala fissa e
+            permettono confronti diretti.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 3. VISUALIZZARE ============== -->
+      <section id="sec-viz">
+        <h2 class="section-title">3. Visualizzare le frequenze</h2>
+
+        <h3 id="sec-bar">3.1 Grafici a barre</h3>
+        <p>
+          Per dati qualitativi i grafici a barre sono lo standard. Su una Series:
+          <code>serie.value_counts().plot.bar()</code>; su un DataFrame di frequenze:
+          <code>tab.plot.bar()</code>. Differenza: il primo ordina per frequenza
+          decrescente, il secondo segue l'ordine dell'indice.
+        </p>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="bar_basics.py" data-lang="python">HEROES_CSV = """\
+Name;Publisher
+Iron Man;Marvel Comics
+Hulk;Marvel Comics
+Batman;DC Comics
+Superman;DC Comics
+Wonder Woman;DC Comics
+Spider-Man;Marvel Comics
+Wolverine;Marvel Comics
+Storm;Marvel Comics
+Thor;Marvel Comics
+Black Widow;Marvel Comics
+Joker;DC Comics
+Aquaman;DC Comics
+Catwoman;DC Comics
+Flash;DC Comics
+Cyborg;DC Comics
+Venom;Marvel Comics
+Doctor Strange;Marvel Comics
+Magneto;Marvel Comics
+Penguin;DC Comics
+Yoda;George Lucas
+"""
+import pandas as pd, io
+import matplotlib.pyplot as plt
+
+heroes = pd.read_csv(io.StringIO(HEROES_CSV), sep=';', index_col='Name')
+heroes['Publisher'].value_counts().plot.bar()
+plt.title("Frequenze (ordinate per valore decrescente)")
+plt.tight_layout()
+plt.show()
+</pre>
+
+        <h3 id="sec-pie">3.2 Diagrammi a torta</h3>
+        <p>
+          Per evidenziare le <em>quote</em> rispetto al totale puoi usare un diagramma
+          a torta (aerogramma). Specifica i colori con <code>colors=[...]</code> (al
+          plurale!) e, se vuoi un cerchio perfetto, usa <code>plt.axis('equal')</code>.
+        </p>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="pie_basics.py" data-lang="python">import pandas as pd, io
+import matplotlib.pyplot as plt
+
+CSV = """\
+Gender;count
+M;14
+F;6
+"""
+gf = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Gender')
+gf['count'].plot.pie(colors=['#3b82f6', '#ec4899'], autopct='%.1f%%')
+plt.ylabel('')
+plt.axis('equal')
+plt.show()
+</pre>
+
+        <div class="quiz" data-id="q-viz-1">
+          <h4>Quale chiamata produce un cerchio (e non un'ellisse)?</h4>
+          <ul class="quiz-options">
+            <li><code>plot.pie()</code> e basta.</li>
+            <li><code>plt.axis('off')</code></li>
+            <li data-correct><code>plt.axis('equal')</code></li>
+            <li><code>plot.pie(circle=True)</code></li>
+          </ul>
+          <div class="quiz-explain">
+            Per default matplotlib usa scale diverse sui due assi (rapporto aureo).
+            <code>plt.axis('equal')</code> rende uguali le unità di misura sui due
+            assi e disegna un cerchio.
+          </div>
+        </div>
+
+        <h3 id="sec-stick">3.3 Diagrammi a bastoncini</h3>
+        <p>
+          Per dati quantitativi <em>discreti</em> con tante possibili specificazioni
+          (anni di apparizione, indice di forza intero…) le barre suggerirebbero
+          erroneamente un'ampiezza sull'asse. Meglio i <em>bastoncini</em>:
+          <code>plt.vlines</code> + un puntino in cima.
+        </p>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="vlines_basics.py" data-lang="python">import pandas as pd, io
+import matplotlib.pyplot as plt
+
+CSV = """\
+year;count
+1939;1
+1941;2
+1962;3
+1963;1
+1974;1
+1975;2
+1980;1
+1985;3
+1991;1
+2000;2
+"""
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='year')
+plt.vlines(df.index, 0, df['count'])
+plt.plot(df.index, df['count'], 'o')
+plt.title("Bastoncini: una specificazione per ogni anno")
+plt.xlabel("Anno")
+plt.ylabel("Frequenza")
+plt.show()
+</pre>
+
+        <h3 id="sec-hist">3.4 Istogrammi</h3>
+        <p>
+          Per dati continui (peso, altezza…) i singoli valori sono quasi sempre unici:
+          serve un istogramma che raggruppa le osservazioni in <strong>bin</strong>
+          (sotto-intervalli). L'altezza di ogni barra rappresenta la frequenza
+          all'interno del bin.
+        </p>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="hist_basics.py" data-lang="python">import pandas as pd, io
+import matplotlib.pyplot as plt
+import numpy as np
+
+CSV = """\
+Name;Weight
+Iron Man;191.85
+Hulk;630.32
+Batman;95.78
+Superman;107.62
+Wonder Woman;74.74
+Spider-Man;72.97
+Wolverine;135.21
+Storm;58.96
+Thor;291.45
+Black Widow;58.39
+Joker;79.85
+Aquaman;146.96
+Catwoman;57.34
+Flash;90.74
+Cyborg;176.32
+Venom;162.46
+Doctor Strange;81.46
+Magneto;87.55
+Penguin;79.43
+Groot;381.07
+Vision;135.27
+Hawkeye;104.92
+Black Panther;81.26
+Lex Luthor;94.21
+Robin;79.13
+"""
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+
+df['Weight'].hist(bins=10)
+plt.title("Pesi: 10 bin equiampi")
+plt.xlabel("kg")
+plt.show()
+
+# Bin di ampiezza variabile: la AREA è proporzionale alla frequenza
+df['Weight'].hist(bins=np.hstack((np.arange(0, 200, 20),
+                                  np.arange(200, 500, 50),
+                                  np.arange(500, 800, 100))))
+plt.title("Bin variabili: l'altezza non rappresenta più direttamente la frequenza")
+plt.xlabel("kg")
+plt.show()
+</pre>
+
+        <div class="callout warning">
+          <strong>Attenzione ai bin variabili.</strong> Quando i bin hanno ampiezze
+          diverse, è l'<em>area</em> della barra (non l'altezza!) a essere
+          proporzionale alla frequenza. Se tutti i bin hanno la stessa ampiezza
+          le due cose coincidono.
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 1 — Frequenze del colore degli occhi</h4>
+          <p>
+            Dato il CSV qui sotto: (a) calcola la tabella delle frequenze relative del
+            colore degli occhi e ordinala in modo decrescente; (b) disegna il grafico a
+            barre corrispondente.
+          </p>
+          <p class="hint">
+            Suggerimento: <code>value_counts(normalize=True)</code> ordina già per
+            frequenza decrescente; per il grafico usa <code>.plot.bar()</code>.
+          </p>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="esercizio1.py" data-lang="python">CSV = """\
+Name;Eye color
+Iron Man;Blue
+Hulk;Green
+Batman;Blue
+Superman;Blue
+Wonder Woman;Blue
+Spider-Man;Hazel
+Wolverine;Blue
+Storm;Blue
+Thor;Blue
+Black Widow;Green
+Captain America;Blue
+Joker;Green
+Aquaman;Blue
+Catwoman;Green
+Flash;Green
+Cyborg;Brown
+Venom;Blue
+Doctor Strange;Grey
+Magneto;Blue
+Penguin;Blue
+"""
+import pandas as pd, io
+import matplotlib.pyplot as plt
+
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+
+# Tua soluzione qui
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="soluzione1.py" data-lang="python">CSV = """\
+Name;Eye color
+Iron Man;Blue
+Hulk;Green
+Batman;Blue
+Superman;Blue
+Wonder Woman;Blue
+Spider-Man;Hazel
+Wolverine;Blue
+Storm;Blue
+Thor;Blue
+Black Widow;Green
+Captain America;Blue
+Joker;Green
+Aquaman;Blue
+Catwoman;Green
+Flash;Green
+Cyborg;Brown
+Venom;Blue
+Doctor Strange;Grey
+Magneto;Blue
+Penguin;Blue
+"""
+import pandas as pd, io
+import matplotlib.pyplot as plt
+
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+freq = df['Eye color'].value_counts(normalize=True)
+print(freq.round(3))
+
+freq.plot.bar()
+plt.ylabel("Frequenza relativa")
+plt.title("Colore degli occhi")
+plt.tight_layout()
+plt.show()
+</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 4. CUMULATE ============== -->
+      <section id="sec-cum">
+        <h2 class="section-title">4. Frequenze cumulate &amp; ECDF</h2>
+        <p>
+          Quando i valori sono <em>ordinabili</em>, possiamo cumulare le frequenze:
+          al primo elemento associamo la sua frequenza, al secondo la somma delle prime
+          due, e così via. Per le frequenze cumulate <em>assolute</em>, l'ultimo valore
+          coincide con il numero totale di osservazioni; per quelle <em>relative</em>,
+          con 1.
+        </p>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="cumulate.py" data-lang="python">CSV = """\
+year
+1939
+1941
+1962
+1962
+1963
+1974
+1975
+1975
+1980
+1985
+1985
+1985
+1991
+2000
+2000
+2010
+"""
+import pandas as pd, io
+import matplotlib.pyplot as plt
+
+s = pd.read_csv(io.StringIO(CSV))['year']
+
+# Frequenze assolute cumulate
+abs_cum = pd.crosstab(index=s, columns=['Cumulate'], colnames=['']).cumsum()
+print("Cumulate assolute (prime righe):")
+print(abs_cum.head())
+print()
+
+# Frequenze relative cumulate
+rel_cum = pd.crosstab(index=s, columns=['Cumulate %'], colnames=[''],
+                      normalize=True).cumsum()
+print("Cumulate relative (ultime righe):")
+print(rel_cum.tail().round(3))
+
+# Visualizzazione
+ax = rel_cum.plot(marker='o', legend=False)
+ax.set_ylabel("Frequenza relativa cumulata")
+ax.set_title("ECDF empirica (lineare a tratti)")
+plt.show()
+</pre>
+
+        <p>
+          Quando il numero di valori distinti aumenta, il grafico delle frequenze
+          relative cumulate è indistinguibile dalla <strong>funzione di ripartizione
+          empirica</strong>:
+        </p>
+        <p>\[ \hat F(x) = \frac{\#\{x_i \le x\}}{n} \]</p>
+        <p>
+          tecnicamente è una funzione costante a tratti — per disegnarla "fedelmente"
+          si usa <code>plt.step</code> (o l'utility <code>statsmodels.distributions.ECDF</code>,
+          ma evitiamo di caricare statsmodels in questa cella).
+        </p>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="ecdf_step.py" data-lang="python">import pandas as pd, io
+import numpy as np
+import matplotlib.pyplot as plt
+
+CSV = """\
+year
+1939
+1941
+1962
+1962
+1963
+1974
+1975
+1975
+1980
+1985
+1985
+1985
+1991
+2000
+2000
+2010
+"""
+s = pd.read_csv(io.StringIO(CSV))['year'].sort_values().reset_index(drop=True)
+n = len(s)
+F = (s.rank(method='max') / n).values  # ECDF empirica "manuale"
+
+plt.step(s.values, F, where='post')
+plt.title("ECDF empirica: F(x) = #{x_i ≤ x} / n")
+plt.xlabel("year")
+plt.ylabel("F̂(x)")
+plt.show()
+</pre>
+
+        <div class="quiz" data-id="q-cum-1">
+          <h4>Se la frequenza cumulata <em>relativa</em> a 1980 vale 0.6, quanti supereroi del
+            campione sono apparsi <strong>dopo</strong> il 1980?</h4>
+          <ul class="quiz-options">
+            <li><code>60% di n</code></li>
+            <li data-correct><code>40% di n</code></li>
+            <li><code>n − 1980</code></li>
+            <li>Non si può dire.</li>
+          </ul>
+          <div class="quiz-explain">
+            Cumulata 0.6 fino al 1980 significa che il 60% degli eroi è apparso
+            <em>fino</em> al 1980 (incluso); il rimanente 40% dopo.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 5. PARETO ============== -->
+      <section id="sec-pareto">
+        <h2 class="section-title">5. Diagrammi di Pareto</h2>
+        <p>
+          Un <strong>diagramma di Pareto</strong> combina barre (frequenze in ordine
+          decrescente) e una linea spezzata che mostra le frequenze cumulate. È il
+          modo standard per individuare visivamente «pochi vitali, molti banali»: la
+          regola 80/20.
+        </p>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="pareto.py" data-lang="python">CSV = """\
+Eye color
+Blue
+Blue
+Blue
+Blue
+Blue
+Blue
+Blue
+Blue
+Brown
+Brown
+Brown
+Brown
+Green
+Green
+Green
+Green
+Hazel
+Hazel
+Grey
+Yellow
+"""
+import pandas as pd, io
+import matplotlib.pyplot as plt
+
+s = pd.read_csv(io.StringIO(CSV))['Eye color']
+freq = s.value_counts(normalize=True)        # già ordinata decrescente
+print("Frequenze:")
+print(freq.round(3))
+
+ax = freq.plot.bar(color='#3b82f6', alpha=.75)
+freq.cumsum().plot(ax=ax, color='#ef4444', marker='o', linewidth=2)
+ax.set_ylim(0, 1.05)
+ax.set_ylabel("Frequenza relativa / cumulata")
+ax.set_title("Diagramma di Pareto")
+plt.tight_layout()
+plt.show()
+
+# 80/20: quanti colori coprono almeno l'80% delle osservazioni?
+cum = freq.cumsum()
+soglia = (cum >= 0.8).idxmax()
+print(f"\nIl primo colore che porta la cumulata sopra l'80% è: {soglia} ({cum.loc[soglia]:.0%})")
+</pre>
+
+        <div class="callout tip">
+          <strong>Quando renormalizzare?</strong> Se filtri prima i valori "rari" (sotto
+          una soglia), la cumulata non arriva a 1. Se vuoi che lo faccia, dividi le
+          frequenze per la loro somma: è una <em>renormalizzazione</em> sul
+          sotto-insieme.
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 2 — Diagramma di Pareto sugli editori</h4>
+          <p>
+            Disegna il diagramma di Pareto sui <code>Publisher</code> del CSV qui sotto.
+            Stampa anche quanti editori bastano a coprire almeno il 90% dei supereroi.
+          </p>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="esercizio2.py" data-lang="python">CSV = """\
+Name;Publisher
+Iron Man;Marvel Comics
+Hulk;Marvel Comics
+Batman;DC Comics
+Superman;DC Comics
+Wonder Woman;DC Comics
+Spider-Man;Marvel Comics
+Wolverine;Marvel Comics
+Storm;Marvel Comics
+Thor;Marvel Comics
+Black Widow;Marvel Comics
+Captain America;Marvel Comics
+Joker;DC Comics
+Aquaman;DC Comics
+Catwoman;DC Comics
+Flash;DC Comics
+Cyborg;DC Comics
+Venom;Marvel Comics
+Doctor Strange;Marvel Comics
+Magneto;Marvel Comics
+Penguin;DC Comics
+Yoda;George Lucas
+Hellboy;Dark Horse Comics
+Spawn;Image Comics
+"""
+import pandas as pd, io
+import matplotlib.pyplot as plt
+
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+# Tua soluzione qui
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="soluzione2.py" data-lang="python">CSV = """\
+Name;Publisher
+Iron Man;Marvel Comics
+Hulk;Marvel Comics
+Batman;DC Comics
+Superman;DC Comics
+Wonder Woman;DC Comics
+Spider-Man;Marvel Comics
+Wolverine;Marvel Comics
+Storm;Marvel Comics
+Thor;Marvel Comics
+Black Widow;Marvel Comics
+Captain America;Marvel Comics
+Joker;DC Comics
+Aquaman;DC Comics
+Catwoman;DC Comics
+Flash;DC Comics
+Cyborg;DC Comics
+Venom;Marvel Comics
+Doctor Strange;Marvel Comics
+Magneto;Marvel Comics
+Penguin;DC Comics
+Yoda;George Lucas
+Hellboy;Dark Horse Comics
+Spawn;Image Comics
+"""
+import pandas as pd, io
+import matplotlib.pyplot as plt
+
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+freq = df['Publisher'].value_counts(normalize=True)
+
+ax = freq.plot.bar(color='#22c55e', alpha=.7)
+freq.cumsum().plot(ax=ax, color='#ef4444', marker='o', linewidth=2)
+ax.set_ylim(0, 1.05)
+plt.tight_layout()
+plt.show()
+
+cum = freq.cumsum()
+n_per_90 = (cum &gt;= 0.9).values.argmax() + 1
+print(f"Servono {n_per_90} editori per coprire almeno il 90% del campione.")
+</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 6. CONGIUNTE ============== -->
+      <section id="sec-congiunte">
+        <h2 class="section-title">6. Frequenze congiunte e marginali</h2>
+        <p>
+          Quando consideriamo <strong>due caratteri</strong> insieme, la frequenza
+          diventa <em>congiunta</em>: conta gli individui per ogni coppia di valori. La
+          tabella corrispondente si chiama <strong>tabella di contingenza</strong> ed è
+          ancora prodotta da <code>pd.crosstab</code>, semplicemente passando entrambe
+          le serie come <code>index</code> e <code>columns</code>.
+        </p>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="contingenza.py" data-lang="python">CSV = """\
+Name;Intelligence;Gender
+Iron Man;high;M
+Hulk;moderate;M
+Batman;high;M
+Superman;good;M
+Wonder Woman;good;F
+Spider-Man;high;M
+Wolverine;average;M
+Storm;average;F
+Thor;good;M
+Black Widow;average;F
+Captain America;good;M
+Joker;high;M
+Aquaman;moderate;M
+Catwoman;average;F
+Flash;moderate;M
+Cyborg;moderate;M
+Venom;moderate;M
+Doctor Strange;high;M
+Magneto;high;M
+Penguin;average;M
+Mystique;good;F
+Rogue;moderate;F
+Jean Grey;high;F
+"""
+import pandas as pd, io
+import matplotlib.pyplot as plt
+
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+
+tab = pd.crosstab(index=df['Intelligence'], columns=df['Gender'])
+# riordino per livello di intelligenza
+tab = tab.reindex(['low', 'moderate', 'average', 'good', 'high']).dropna(how='all')
+print(tab)
+print()
+
+# margins=True aggiunge totali (frequenze marginali)
+print("Con marginali:")
+print(pd.crosstab(index=df['Intelligence'], columns=df['Gender'], margins=True)
+        .reindex(['low', 'moderate', 'average', 'good', 'high', 'All']).dropna(how='all'))
+
+# barre raggruppate
+tab.plot.bar(color=['#ec4899', '#3b82f6'])
+plt.title("Frequenze congiunte: Intelligence × Gender")
+plt.tight_layout()
+plt.show()
+
+# barre impilate
+tab.plot.bar(color=['#ec4899', '#3b82f6'], stacked=True)
+plt.title("Stesso dato, barre impilate")
+plt.tight_layout()
+plt.show()
+</pre>
+
+        <div class="callout info">
+          <strong>Frequenze marginali.</strong> Le righe e colonne aggiunte da
+          <code>margins=True</code> contengono le frequenze del singolo carattere
+          (somme su righe / colonne). Sono "marginali" perché stanno ai margini della
+          tabella!
+        </div>
+
+        <h3>Bin per caratteri numerici</h3>
+        <p>
+          Se uno dei caratteri è continuo (peso, altezza), <code>pd.crosstab</code>
+          produrrebbe una tabella enorme con praticamente solo 0 e 1. Soluzione:
+          <code>pd.cut</code> raggruppa i numeri in intervalli prefissati.
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="cut_intervalli.py" data-lang="python">CSV = """\
+Name;Weight;Gender
+Iron Man;191.85;M
+Hulk;630.32;M
+Batman;95.78;M
+Superman;107.62;M
+Wonder Woman;74.74;F
+Spider-Man;72.97;M
+Wolverine;135.21;M
+Storm;58.96;F
+Thor;291.45;M
+Black Widow;58.39;F
+Captain America;108.10;M
+Joker;79.85;M
+Aquaman;146.96;M
+Catwoman;57.34;F
+Flash;90.74;M
+Cyborg;176.32;M
+Venom;162.46;M
+Doctor Strange;81.46;M
+Magneto;87.55;M
+Penguin;79.43;M
+"""
+import pandas as pd, io
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+
+print(pd.crosstab(
+    index=pd.cut(df['Weight'], bins=[30, 80, 120, 200, 700]),
+    columns=df['Gender'],
+    margins=True
+))
+</pre>
+
+        <h3>Normalizzare la tabella di contingenza</h3>
+        <p>
+          L'argomento <code>normalize</code> di <code>pd.crosstab</code> ha tre valori
+          comuni: <code>'all'</code> (somma totale = 1), <code>'index'</code> (ogni
+          riga somma a 1), <code>'columns'</code> (ogni colonna somma a 1). La
+          normalizzazione per colonna è ottima per <em>confrontare</em> sotto-popolazioni
+          di taglie diverse.
+        </p>
+
+        <div class="quiz" data-id="q-cong-1">
+          <h4>Vuoi confrontare la distribuzione del livello di intelligenza tra M e F,
+            sapendo che ci sono molti più M. Quale normalizzazione conviene?</h4>
+          <ul class="quiz-options">
+            <li><code>normalize='all'</code></li>
+            <li><code>normalize='index'</code></li>
+            <li data-correct><code>normalize='columns'</code></li>
+            <li>Nessuna: le frequenze assolute vanno bene così.</li>
+          </ul>
+          <div class="quiz-explain">
+            Normalizzando per colonna ottieni due distribuzioni che sommano a 1
+            ciascuna. Le altezze delle barre M e F sono ora confrontabili
+            indipendentemente dalle taglie dei due gruppi.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 7. SCATTER ============== -->
+      <section id="sec-scatter">
+        <h2 class="section-title">7. Scatter, covarianza e correlazione</h2>
+        <p>
+          Quando entrambi i caratteri sono <em>numerici</em>, lo strumento giusto è il
+          <strong>diagramma di dispersione</strong> (<em>scatter plot</em>): ogni
+          osservazione diventa un punto nel piano.
+        </p>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="scatter.py" data-lang="python">CSV = """\
+Name;Height;Weight
+Iron Man;198.51;191.85
+Hulk;244.50;630.32
+Batman;188.04;95.78
+Superman;191.10;107.62
+Wonder Woman;183.13;74.74
+Spider-Man;177.95;72.97
+Wolverine;160.70;135.21
+Storm;180.39;58.96
+Thor;198.10;291.45
+Captain America;188.06;108.10
+Black Widow;170.30;58.39
+Aquaman;185.71;146.96
+Flash;185.36;90.74
+Cyborg;185.10;176.32
+Vision;190.20;135.27
+Hawkeye;191.21;104.92
+Black Panther;180.34;81.26
+Magneto;188.10;87.55
+Joker;185.81;79.85
+Doctor Strange;187.96;81.46
+Robin;167.64;79.13
+"""
+import pandas as pd, io
+import matplotlib.pyplot as plt
+
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+
+df.plot.scatter('Height', 'Weight')
+plt.title("Altezza vs Peso")
+plt.show()
+
+# Covarianza e correlazione lineare di Pearson
+cov = df['Height'].cov(df['Weight'])
+corr = df['Height'].corr(df['Weight'])
+print(f"Covarianza:  {cov:.2f}")
+print(f"Correlazione (Pearson): {corr:.3f}")
+</pre>
+
+        <p>
+          La <strong>covarianza</strong> ha le unità di misura del prodotto delle due
+          variabili (qui kg·cm) e quindi è poco interpretabile da sola. La
+          <strong>correlazione di Pearson</strong> normalizza la covarianza dividendola
+          per il prodotto delle deviazioni standard: vive in <code>[-1, 1]</code> ed è
+          adimensionale.
+        </p>
+
+        <ul>
+          <li><code>r ≈ 1</code>: relazione lineare crescente forte;</li>
+          <li><code>r ≈ -1</code>: relazione lineare decrescente forte;</li>
+          <li><code>r ≈ 0</code>: nessuna relazione <em>lineare</em> (può essercene
+            comunque una non-lineare!).</li>
+        </ul>
+
+        <div class="callout warning">
+          <strong>Outlier che spostano la retta.</strong> Anche pochi punti estremi
+          (Hulk!) possono cambiare drasticamente il coefficiente angolare di una retta
+          di regressione lineare. Sempre da rimuovere/marcare consapevolmente.
+        </div>
+
+        <div class="quiz" data-id="q-scatter-1">
+          <h4>Hai due Series: <code>r = X.corr(Y) = -0.92</code>. Cosa significa?</h4>
+          <ul class="quiz-options">
+            <li>X causa Y in modo decrescente.</li>
+            <li>I valori di X e Y sono identici a meno del segno.</li>
+            <li data-correct>Esiste una forte relazione lineare <em>decrescente</em> tra X e Y.</li>
+            <li>Y dipende da X tramite una funzione esponenziale.</li>
+          </ul>
+          <div class="quiz-explain">
+            Pearson misura solo l'andamento <em>lineare</em>; un valore vicino a -1
+            indica una forte relazione lineare con pendenza negativa. Non dice
+            nulla sulla causalità.
+          </div>
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 3 — Correlazione Marvel vs DC</h4>
+          <p>
+            Calcola separatamente la correlazione tra <code>Height</code> e
+            <code>Weight</code> per gli eroi Marvel e per quelli DC. È più alta in un
+            gruppo o nell'altro?
+          </p>
+          <p class="hint">
+            Suggerimento: filtra il DataFrame per <code>Publisher</code> e poi chiama
+            <code>.corr()</code> sulle due serie.
+          </p>
+
+<pre data-runnable data-pandas="true" data-title="esercizio3.py" data-lang="python">CSV = """\
+Name;Publisher;Height;Weight
+Iron Man;Marvel Comics;198.51;191.85
+Hulk;Marvel Comics;244.50;630.32
+Spider-Man;Marvel Comics;177.95;72.97
+Wolverine;Marvel Comics;160.70;135.21
+Thor;Marvel Comics;198.10;291.45
+Captain America;Marvel Comics;188.06;108.10
+Storm;Marvel Comics;180.39;58.96
+Black Widow;Marvel Comics;170.30;58.39
+Magneto;Marvel Comics;188.10;87.55
+Doctor Strange;Marvel Comics;187.96;81.46
+Batman;DC Comics;188.04;95.78
+Superman;DC Comics;191.10;107.62
+Wonder Woman;DC Comics;183.13;74.74
+Aquaman;DC Comics;185.71;146.96
+Flash;DC Comics;185.36;90.74
+Cyborg;DC Comics;185.10;176.32
+Joker;DC Comics;185.81;79.85
+Catwoman;DC Comics;170.58;57.34
+Robin;DC Comics;167.64;79.13
+Penguin;DC Comics;167.91;79.43
+"""
+import pandas as pd, io
+
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+# Tua soluzione qui
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-pandas="true" data-title="soluzione3.py" data-lang="python">CSV = """\
+Name;Publisher;Height;Weight
+Iron Man;Marvel Comics;198.51;191.85
+Hulk;Marvel Comics;244.50;630.32
+Spider-Man;Marvel Comics;177.95;72.97
+Wolverine;Marvel Comics;160.70;135.21
+Thor;Marvel Comics;198.10;291.45
+Captain America;Marvel Comics;188.06;108.10
+Storm;Marvel Comics;180.39;58.96
+Black Widow;Marvel Comics;170.30;58.39
+Magneto;Marvel Comics;188.10;87.55
+Doctor Strange;Marvel Comics;187.96;81.46
+Batman;DC Comics;188.04;95.78
+Superman;DC Comics;191.10;107.62
+Wonder Woman;DC Comics;183.13;74.74
+Aquaman;DC Comics;185.71;146.96
+Flash;DC Comics;185.36;90.74
+Cyborg;DC Comics;185.10;176.32
+Joker;DC Comics;185.81;79.85
+Catwoman;DC Comics;170.58;57.34
+Robin;DC Comics;167.64;79.13
+Penguin;DC Comics;167.91;79.43
+"""
+import pandas as pd, io
+
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+for pub in ['Marvel Comics', 'DC Comics']:
+    sub = df[df['Publisher'] == pub]
+    r = sub['Height'].corr(sub['Weight'])
+    print(f"{pub:&lt;15}  n={len(sub):2d}  r = {r:+.3f}")
+
+# Marvel ha Hulk e Thor che 'tirano' la correlazione verso l'alto;
+# DC è più omogeneo come fisicità.
+</pre>
+          </div>
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 4 — Frequenze congiunte e barre raggruppate</h4>
+          <p>
+            Costruisci la tabella di contingenza tra <code>Publisher</code> e bin di
+            altezza (≤ 180, 180–200, &gt; 200) e disegnala come barre raggruppate.
+          </p>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="esercizio4.py" data-lang="python">CSV = """\
+Name;Publisher;Height
+Iron Man;Marvel Comics;198.51
+Hulk;Marvel Comics;244.50
+Spider-Man;Marvel Comics;177.95
+Wolverine;Marvel Comics;160.70
+Thor;Marvel Comics;198.10
+Captain America;Marvel Comics;188.06
+Storm;Marvel Comics;180.39
+Black Widow;Marvel Comics;170.30
+Batman;DC Comics;188.04
+Superman;DC Comics;191.10
+Wonder Woman;DC Comics;183.13
+Aquaman;DC Comics;185.71
+Flash;DC Comics;185.36
+Cyborg;DC Comics;185.10
+Joker;DC Comics;185.81
+Catwoman;DC Comics;170.58
+"""
+import pandas as pd, io
+import matplotlib.pyplot as plt
+
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+# Tua soluzione qui
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="soluzione4.py" data-lang="python">CSV = """\
+Name;Publisher;Height
+Iron Man;Marvel Comics;198.51
+Hulk;Marvel Comics;244.50
+Spider-Man;Marvel Comics;177.95
+Wolverine;Marvel Comics;160.70
+Thor;Marvel Comics;198.10
+Captain America;Marvel Comics;188.06
+Storm;Marvel Comics;180.39
+Black Widow;Marvel Comics;170.30
+Batman;DC Comics;188.04
+Superman;DC Comics;191.10
+Wonder Woman;DC Comics;183.13
+Aquaman;DC Comics;185.71
+Flash;DC Comics;185.36
+Cyborg;DC Comics;185.10
+Joker;DC Comics;185.81
+Catwoman;DC Comics;170.58
+"""
+import pandas as pd, io
+import matplotlib.pyplot as plt
+
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+bins = pd.cut(df['Height'], bins=[0, 180, 200, 300],
+              labels=['≤180', '180–200', '&gt;200'])
+
+tab = pd.crosstab(index=bins, columns=df['Publisher'])
+print(tab)
+
+tab.plot.bar(color=['#3b82f6', '#ef4444'])
+plt.title("Distribuzione per fascia di altezza × editore")
+plt.tight_layout()
+plt.show()
+</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 8. RIEPILOGO ============== -->
+      <section id="sec-finale">
+        <h2 class="section-title">8. Riepilogo &amp; sfida finale</h2>
+        <p>Idee da portare via:</p>
+        <ul>
+          <li><strong>Tipi di dato</strong>: qualitativi (binari, nominali, ordinali) vs quantitativi (discreti, continui) → guida la scelta del grafico.</li>
+          <li><strong>Frequenze</strong>: <code>value_counts</code> e <code>pd.crosstab</code>; sempre meglio <em>relative</em> per confronti tra campioni.</li>
+          <li><strong>Visualizzazioni</strong>: barre per qualitativi; bastoncini per discreti; istogrammi per continui; pie per quote; Pareto per «80/20».</li>
+          <li><strong>Cumulate</strong> ed <strong>ECDF</strong>: utili per rispondere a domande del tipo «quanti ≤ x?».</li>
+          <li><strong>Frequenze congiunte</strong>: <code>pd.crosstab(idx, cols, normalize='columns')</code> per confrontare sotto-popolazioni.</li>
+          <li><strong>Scatter + Pearson</strong>: la correlazione vive in <code>[-1, 1]</code>; misura solo l'andamento <em>lineare</em>.</li>
+        </ul>
+
+        <div class="quiz" data-id="q-final-1">
+          <h4>Quale grafico scegli per visualizzare la distribuzione del <strong>peso</strong>
+            (numero reale, decine di valori unici)?</h4>
+          <ul class="quiz-options">
+            <li>Pie chart.</li>
+            <li>Bar chart classico.</li>
+            <li data-correct>Istogramma con un numero ragionevole di bin.</li>
+            <li>Diagramma a bastoncini.</li>
+          </ul>
+          <div class="quiz-explain">
+            Per una variabile continua i singoli valori sono quasi unici: serve
+            raggruppare in bin. Pie e bar sono più adatti a categoriche; i bastoncini
+            a discrete con poche specificazioni.
+          </div>
+        </div>
+
+        <div class="quiz" data-id="q-final-2">
+          <h4>Una <code>pd.crosstab(idx, cols, normalize='index')</code> produce una tabella
+            in cui:</h4>
+          <ul class="quiz-options">
+            <li>la somma totale fa 1.</li>
+            <li data-correct>ogni <em>riga</em> somma a 1.</li>
+            <li>ogni <em>colonna</em> somma a 1.</li>
+            <li>la diagonale principale somma a 1.</li>
+          </ul>
+        </div>
+
+        <div class="exercise">
+          <h4>Sfida finale — Profilo statistico di un editore</h4>
+          <p>
+            Sul CSV qui sotto, scegli un editore (es. <code>Marvel Comics</code>) e
+            produci un mini-report:
+          </p>
+          <ol>
+            <li>Numero di eroi e percentuale rispetto al totale del campione.</li>
+            <li>Tabella delle frequenze relative del colore degli occhi (top-3).</li>
+            <li>Istogramma del peso e correlazione tra altezza e peso.</li>
+          </ol>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="sfida.py" data-lang="python">CSV = """\
+Name;Publisher;Height;Weight;Eye color
+Iron Man;Marvel Comics;198.51;191.85;Blue
+Hulk;Marvel Comics;244.50;630.32;Green
+Spider-Man;Marvel Comics;177.95;72.97;Hazel
+Wolverine;Marvel Comics;160.70;135.21;Blue
+Thor;Marvel Comics;198.10;291.45;Blue
+Captain America;Marvel Comics;188.06;108.10;Blue
+Storm;Marvel Comics;180.39;58.96;Blue
+Black Widow;Marvel Comics;170.30;58.39;Green
+Magneto;Marvel Comics;188.10;87.55;Blue
+Doctor Strange;Marvel Comics;187.96;81.46;Grey
+Vision;Marvel Comics;190.20;135.27;Yellow
+Hawkeye;Marvel Comics;191.21;104.92;Blue
+Batman;DC Comics;188.04;95.78;Blue
+Superman;DC Comics;191.10;107.62;Blue
+Wonder Woman;DC Comics;183.13;74.74;Blue
+Aquaman;DC Comics;185.71;146.96;Blue
+Flash;DC Comics;185.36;90.74;Green
+Cyborg;DC Comics;185.10;176.32;Brown
+Joker;DC Comics;185.81;79.85;Green
+Catwoman;DC Comics;170.58;57.34;Green
+Robin;DC Comics;167.64;79.13;Blue
+Penguin;DC Comics;167.91;79.43;Blue
+"""
+import pandas as pd, io
+import matplotlib.pyplot as plt
+
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+
+EDITORE = 'Marvel Comics'
+sub = df[df['Publisher'] == EDITORE]
+
+# 1) numerosità
+print(f"{EDITORE}: {len(sub)} eroi su {len(df)} ({len(sub)/len(df):.0%})")
+
+# 2) top-3 colori degli occhi
+print("\nColore degli occhi (top-3, frequenze relative):")
+print(sub['Eye color'].value_counts(normalize=True).head(3).round(3))
+
+# 3) istogramma + correlazione
+sub['Weight'].hist(bins=10)
+plt.title(f"Pesi - {EDITORE}")
+plt.xlabel("kg")
+plt.show()
+
+print(f"\nCorrelazione altezza/peso: {sub['Height'].corr(sub['Weight']):+.3f}")
+</pre>
+        </div>
+
+        <p style="margin-top: 24px;">
+          Prossima fermata:
+          <strong><a href="lezione-04.html">L04 — Indici di dispersione</a></strong>
+          (varianza, deviazione standard, box plot, Q-Q plot).
+        </p>
+      </section>
+
+      <footer class="footer">
+        L03 · Dati e frequenze — Interactive Learning · Superhero Data Science
+      </footer>
+    </main>
+  </div>
+
+  <script src="assets/app.js" defer></script>
+</body>
+</html>

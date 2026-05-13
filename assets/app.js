@@ -159,6 +159,14 @@ _plt.show = _il_capture_show
     const autoRun = pre.dataset.autorun === "true";
     const needsMatplotlib = pre.dataset.matplotlib === "true";
     const needsPandas = pre.dataset.pandas === "true";
+    const needsScipy = pre.dataset.scipy === "true";
+    const needsSklearn = pre.dataset.sklearn === "true";
+    const needsStatsmodels = pre.dataset.statsmodels === "true";
+    /* `data-pkgs="pkg1,pkg2"` per casi non coperti dai flag rapidi sopra */
+    const extraPkgs = (pre.dataset.pkgs || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
 
     const editor = el("textarea", {
       class: "code-editor",
@@ -213,6 +221,16 @@ _plt.show = _il_capture_show
         if (needsPandas) {
           setStatus("Caricamento pandas…");
           await pyodide.loadPackage(["pandas"]);
+          setStatus("Python pronto", "ready");
+        }
+        const extraToLoad = [];
+        if (needsScipy) extraToLoad.push("scipy");
+        if (needsSklearn) extraToLoad.push("scikit-learn");
+        if (needsStatsmodels) extraToLoad.push("statsmodels");
+        for (const p of extraPkgs) extraToLoad.push(p);
+        if (extraToLoad.length > 0) {
+          setStatus(`Caricamento ${extraToLoad.join(", ")}…`);
+          await pyodide.loadPackage(extraToLoad);
           setStatus("Python pronto", "ready");
         }
 

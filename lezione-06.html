@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L06 · Trasformazione dei dati — Interactive Learning</title>
+  <meta name="description" content="Traslazione, cambiamento di scala, standardizzazione e trasformazioni logaritmiche." />
+  <link rel="stylesheet" href="assets/styles.css" />
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">SD</div>
+        <div>
+          <strong>Lezione 06</strong>
+          <small>Trasformazione dei dati</small>
+        </div>
+      </div>
+
+      <p style="margin: 0 0 8px;">
+        <a href="index.html" style="font-size:0.85rem;">← Torna all'indice</a>
+      </p>
+
+      <h2>In questa lezione</h2>
+      <ul class="toc">
+        <li><a href="#sec-perche">1. Perché trasformare i dati</a></li>
+        <li><a href="#sec-trasl">2. Traslazione</a></li>
+        <li><a href="#sec-scala">3. Cambiamento di scala</a></li>
+        <li><a href="#sec-affine">4. Cambiamento di origine + scala</a></li>
+        <li><a href="#sec-std">5. Standardizzazione (z-score)</a></li>
+        <li><a href="#sec-log">6. Trasformazioni logaritmiche</a></li>
+        <li><a href="#sec-finale">7. Riepilogo &amp; sfida finale</a></li>
+      </ul>
+    </aside>
+
+    <main class="main">
+
+      <div class="theme-toggle">
+        <button class="btn ghost" type="button">🌙 Tema scuro</button>
+      </div>
+
+      <section class="hero">
+        <h1>L06 · Trasformazione dei dati</h1>
+        <p>
+          I valori così come arrivano non sono sempre adatti: troppo grandi, in scale
+          diverse, distribuzioni asimmetriche. Le <strong>trasformazioni</strong>
+          permettono di rimettere ordine senza cambiare la <em>forma</em> della
+          distribuzione (le frequenze restano invariate, perché le funzioni che usiamo
+          sono iniettive).
+        </p>
+        <div class="meta">
+          <span>≈ 30–45 minuti</span>
+          <span>8 quiz</span>
+          <span>4 esercizi</span>
+        </div>
+        <div class="progress-wrap" title="Progresso quiz">
+          <div class="progress-bar"></div>
+        </div>
+      </section>
+
+      <!-- ============== 1. PERCHÉ ============== -->
+      <section id="sec-perche">
+        <h2 class="section-title">1. Perché trasformare</h2>
+        <p>
+          Le ragioni più comuni:
+        </p>
+        <ul>
+          <li><strong>Confronto</strong>: due variabili in unità diverse (cm vs kg) sono
+            difficili da confrontare; portarle a una scala comune (es. <code>[0, 1]</code>)
+            le rende paragonabili.</li>
+          <li><strong>Forma</strong>: una distribuzione molto asimmetrica può diventare
+            quasi simmetrica con una trasformazione logaritmica.</li>
+          <li><strong>Leggibilità</strong>: i valori grandi e poco dispersi diventano più
+            comodi se traslati o standardizzati.</li>
+        </ul>
+        <p>
+          In tutti i casi che vedremo qui, la trasformazione è <em>iniettiva</em>:
+          osservazioni distinte restano distinte e <strong>le frequenze non cambiano</strong>.
+          Cambieranno gli indici descrittivi (media, std, ecc.) e l'aspetto del
+          grafico, non l'informazione contenuta.
+        </p>
+      </section>
+
+      <!-- ============== 2. TRASLAZIONE ============== -->
+      <section id="sec-trasl">
+        <h2 class="section-title">2. Traslazione</h2>
+        <p>
+          Sostituiamo \(x \mapsto x' = x - k\) (o \(+k\)). Effetti:
+        </p>
+        <ul>
+          <li>media, mediana, quantili: <strong>traslano della stessa quantità</strong>;</li>
+          <li>varianza, std, IQR, range: <strong>invariati</strong>.</li>
+        </ul>
+
+<pre data-runnable data-pandas="true" data-title="traslazione.py" data-lang="python">CSV = """\
+Name;First appearance
+Iron Man;1963
+Hulk;1962
+Spider-Man;1962
+Wolverine;1974
+Storm;1975
+Thor;1962
+Captain America;1941
+Doctor Strange;1963
+Magneto;1963
+Batman;1939
+Superman;1938
+Wonder Woman;1941
+Aquaman;1941
+Flash;1956
+Cyborg;1980
+Joker;1940
+Catwoman;1940
+Robin;1940
+Penguin;1941
+"""
+import pandas as pd, io
+year = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')['First appearance']
+
+# Traslo: parto da 0 con il minimo
+year_t = year - year.min()
+
+print("Originale:")
+print(f"  media = {year.mean():.2f}, std = {year.std():.2f}, range = {year.max()-year.min()}")
+print("Traslato (parte da 0):")
+print(f"  media = {year_t.mean():.2f}, std = {year_t.std():.2f}, range = {year_t.max()-year_t.min()}")
+</pre>
+
+        <div class="quiz" data-id="q-trasl-1">
+          <h4>Una traslazione di +10 modifica:</h4>
+          <ul class="quiz-options">
+            <li>solo la varianza.</li>
+            <li>varianza e media.</li>
+            <li data-correct>solo media, mediana e quantili.</li>
+            <li>nulla.</li>
+          </ul>
+          <div class="quiz-explain">
+            Sommare una costante sposta la "centralità" di altrettanto, ma le
+            distanze tra i punti restano uguali ⇒ varianza, std, IQR e range non
+            cambiano.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 3. SCALA ============== -->
+      <section id="sec-scala">
+        <h2 class="section-title">3. Cambiamento di scala</h2>
+        <p>
+          Sostituiamo \(x \mapsto x' = x / h\) con \(h &gt; 0\). Effetti:
+        </p>
+        <ul>
+          <li>media, mediana, quantili, IQR, range, std: scalati di \(1/h\);</li>
+          <li>varianza: scalata di \(1/h^2\) (ricorda: la varianza ha unità al quadrato).</li>
+        </ul>
+
+<pre data-runnable data-pandas="true" data-title="scala.py" data-lang="python">CSV = """\
+Name;Strength
+Iron Man;85
+Hulk;100
+Spider-Man;55
+Wolverine;75
+Storm;30
+Thor;100
+Black Widow;13
+Captain America;19
+Doctor Strange;10
+Magneto;55
+Batman;26
+Superman;100
+Wonder Woman;100
+Aquaman;85
+Flash;26
+Cyborg;80
+Joker;10
+Catwoman;14
+Robin;14
+Penguin;9
+"""
+import pandas as pd, io
+s = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')['Strength']
+
+s_norm01 = s / s.max()  # ora vive in [0, 1]
+print("Originale:  ", s.head(3).values)
+print("In [0, 1]: ", s_norm01.head(3).round(2).values)
+print(f"\nstd originale: {s.std():.3f}")
+print(f"std scalata : {s_norm01.std():.3f}  (= {s.std()/s.max():.3f})")
+print(f"var originale: {s.var():.3f}")
+print(f"var scalata : {s_norm01.var():.3f}  (= {s.var()/s.max()**2:.3f})")
+</pre>
+
+        <div class="quiz" data-id="q-scala-1">
+          <h4>Se divido tutti i dati per 10, la <strong>varianza</strong>:</h4>
+          <ul class="quiz-options">
+            <li>resta uguale.</li>
+            <li>si divide per 10.</li>
+            <li data-correct>si divide per 100.</li>
+            <li>si moltiplica per 100.</li>
+          </ul>
+          <div class="quiz-explain">
+            La varianza è la media degli scarti <em>al quadrato</em>: scalando di
+            \(1/h\), si scala di \(1/h^2\). Per \(h=10\), si divide per 100.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 4. AFFINE ============== -->
+      <section id="sec-affine">
+        <h2 class="section-title">4. Cambiamento di origine e scala</h2>
+        <p>
+          Per portare un intervallo \([a, b]\) di valori in un nuovo intervallo
+          \([c, d]\), si combina traslazione e scala:
+        </p>
+        <p>\[ x' = c + \frac{d - c}{b - a}(x - a) \]</p>
+        <p>
+          Casi particolari frequenti:
+        </p>
+        <ul>
+          <li><strong>min-max scaling in [0, 1]</strong>: \(x' = (x - a) / (b - a)\);</li>
+          <li><strong>scaling in [-1, 1]</strong>: \(x' = 2 (x - a) / (b - a) - 1\).</li>
+        </ul>
+
+<pre data-runnable data-pandas="true" data-title="minmax.py" data-lang="python">CSV = """\
+Name;Strength
+Iron Man;85
+Hulk;100
+Spider-Man;55
+Wolverine;75
+Storm;30
+Thor;100
+Doctor Strange;10
+Penguin;9
+Catwoman;14
+Aquaman;85
+"""
+import pandas as pd, io
+s = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')['Strength']
+
+a, b = s.min(), s.max()
+c, d = -10, 10
+s_new = c + (d - c) / (b - a) * (s - a)
+
+print(s_new.round(2))
+print(f"\nrange originale: [{a}, {b}]   range nuovo: [{s_new.min():.1f}, {s_new.max():.1f}]")
+</pre>
+
+        <div class="exercise">
+          <h4>Esercizio 1 — Min-max scaling</h4>
+          <p>
+            Implementa una funzione <code>minmax(s, c=0, d=1)</code> che trasforma una
+            <code>pd.Series</code> nell'intervallo <code>[c, d]</code>. Verifica che
+            <code>min(s_new) == c</code> e <code>max(s_new) == d</code>.
+          </p>
+
+<pre data-runnable data-pandas="true" data-title="esercizio1.py" data-lang="python">import pandas as pd
+
+def minmax(s, c=0, d=1):
+    # Tua soluzione qui
+    pass
+
+s = pd.Series([10, 30, 50, 70, 100])
+# print(minmax(s))                # atteso: [0, 0.22, 0.44, 0.67, 1]
+# print(minmax(s, -1, 1))         # atteso: [-1, -0.55, -0.11, 0.33, 1]
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-pandas="true" data-title="soluzione1.py" data-lang="python">import pandas as pd
+
+def minmax(s, c=0, d=1):
+    a, b = s.min(), s.max()
+    return c + (d - c) / (b - a) * (s - a)
+
+s = pd.Series([10, 30, 50, 70, 100])
+print(minmax(s).round(3).tolist())
+print(minmax(s, -1, 1).round(3).tolist())
+print("min/max:", minmax(s, -1, 1).min(), minmax(s, -1, 1).max())
+</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 5. STANDARDIZZAZIONE ============== -->
+      <section id="sec-std">
+        <h2 class="section-title">5. Standardizzazione (z-score)</h2>
+        <p>
+          La <strong>standardizzazione</strong> è il caso particolare di trasformazione
+          affine in cui usi media e deviazione standard:
+        </p>
+        <p>\[ z = \frac{x - \overline x}{s_x} \]</p>
+        <p>
+          Sui dati trasformati: media campionaria \(\approx 0\) e std \(\approx 1\).
+          Utile per:
+        </p>
+        <ul>
+          <li>confrontare variabili in unità diverse;</li>
+          <li>fornire input "nettati" a molti algoritmi di machine learning (KNN, SVM,
+            reti neurali…);</li>
+          <li>valutare quanto un'osservazione è «lontana» dalla media in unità di std.</li>
+        </ul>
+
+<pre data-runnable data-pandas="true" data-title="zscore.py" data-lang="python">CSV = """\
+Name;Strength
+Iron Man;85
+Hulk;100
+Spider-Man;55
+Wolverine;75
+Storm;30
+Thor;100
+Black Widow;13
+Captain America;19
+Doctor Strange;10
+Magneto;55
+Batman;26
+Superman;100
+Wonder Woman;100
+Aquaman;85
+Flash;26
+Cyborg;80
+Joker;10
+Catwoman;14
+Robin;14
+Penguin;9
+"""
+import pandas as pd, io
+s = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')['Strength']
+z = (s - s.mean()) / s.std()
+
+print(z.round(2).head(10))
+print()
+print(f"media z = {z.mean():.2e}   (≈ 0, a meno di errori float)")
+print(f"std   z = {z.std():.4f}    (≈ 1)")
+</pre>
+
+        <div class="callout info">
+          <strong>Z-score utile per spotting outlier.</strong> Se \(|z| &gt; 3\) per
+          un dato, è plausibile classificarlo come "anomalo" (sotto l'ipotesi di
+          distribuzione approssimativamente normale).
+        </div>
+
+        <div class="quiz" data-id="q-std-1">
+          <h4>Dopo standardizzazione, la nuova varianza è:</h4>
+          <ul class="quiz-options">
+            <li>0</li>
+            <li data-correct>1</li>
+            <li>la stessa di prima</li>
+            <li>indeterminata</li>
+          </ul>
+        </div>
+
+        <div class="quiz" data-id="q-std-2">
+          <h4>Le z-score trasformano i dati in un'unità chiamata:</h4>
+          <ul class="quiz-options">
+            <li>kg</li>
+            <li>cm</li>
+            <li data-correct>(adimensionale)</li>
+            <li>%</li>
+          </ul>
+          <div class="quiz-explain">
+            Il numeratore e il denominatore hanno la stessa unità di misura, quindi
+            si semplificano. La z-score è adimensionale: «quante deviazioni standard
+            di distanza dalla media».
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 6. LOG ============== -->
+      <section id="sec-log">
+        <h2 class="section-title">6. Trasformazioni logaritmiche</h2>
+        <p>
+          Quando i dati spaziano su molti ordini di grandezza (popolazioni, redditi,
+          prezzi…), \(x \mapsto \log x\) li "compatta" e spesso simmetrizza la
+          distribuzione. La base del logaritmo (2, \(\mathrm e\), 10) è una scelta
+          stilistica: cambia la scala dei valori trasformati ma non la forma della
+          distribuzione.
+        </p>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="log_transform.py" data-lang="python">import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Distribuzione molto asimmetrica a destra (lognormale)
+rng = np.random.default_rng(0)
+x = pd.Series(rng.lognormal(mean=0, sigma=1, size=2000), name='x')
+
+fig, axs = plt.subplots(1, 2, figsize=(9, 3.5))
+x.hist(ax=axs[0], bins=40)
+axs[0].set_title("x originale (skew destro)")
+
+np.log10(x).hist(ax=axs[1], bins=40, color='#22c55e')
+axs[1].set_title("log10(x): quasi simmetrica")
+plt.tight_layout()
+plt.show()
+</pre>
+
+        <p>
+          Le frequenze non cambiano (la trasformazione è iniettiva): è solo la
+          <em>scala</em> dell'asse x che diventa più informativa.
+        </p>
+
+        <div class="callout warning">
+          <strong>Cautele.</strong> Il log è definito solo su valori positivi: se hai
+          zero o negativi devi traslare prima (es. <code>log(x + 1)</code>) oppure
+          considerare se quei valori hanno un senso.
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 2 — Standardizzazione vs min-max</h4>
+          <p>
+            Dato il CSV qui sotto, applica due trasformazioni a <code>Weight</code>:
+            (a) min-max in <code>[0, 1]</code>, (b) z-score. Confronta media, std, min
+            e max nelle due versioni. Quale dei due è più sensibile alla presenza di
+            <em>outlier</em>?
+          </p>
+
+<pre data-runnable data-pandas="true" data-title="esercizio2.py" data-lang="python">CSV = """\
+Name;Weight
+Iron Man;191.85
+Hulk;630.32
+Batman;95.78
+Superman;107.62
+Wonder Woman;74.74
+Spider-Man;72.97
+Wolverine;135.21
+Storm;58.96
+Thor;291.45
+Black Widow;58.39
+"""
+import pandas as pd, io
+w = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')['Weight']
+
+# Tua soluzione qui
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-pandas="true" data-title="soluzione2.py" data-lang="python">CSV = """\
+Name;Weight
+Iron Man;191.85
+Hulk;630.32
+Batman;95.78
+Superman;107.62
+Wonder Woman;74.74
+Spider-Man;72.97
+Wolverine;135.21
+Storm;58.96
+Thor;291.45
+Black Widow;58.39
+"""
+import pandas as pd, io
+w = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')['Weight']
+
+minmax = (w - w.min()) / (w.max() - w.min())
+z      = (w - w.mean()) / w.std()
+
+print("min-max:")
+print(f"  min={minmax.min():.3f}  max={minmax.max():.3f}  media={minmax.mean():.3f}")
+print("z-score:")
+print(f"  min={z.min():.3f}  max={z.max():.3f}  media={z.mean():.2e}  std={z.std():.3f}")
+
+# Hulk (630 kg) schiaccia tutti gli altri valori in [0, 0.2] nel min-max:
+# il min-max è MOLTO sensibile agli outlier. La z-score è più stabile.
+</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 7. RIEPILOGO ============== -->
+      <section id="sec-finale">
+        <h2 class="section-title">7. Riepilogo &amp; sfida finale</h2>
+        <ul>
+          <li>Le trasformazioni iniettive lasciano le <em>frequenze</em> invariate ma cambiano gli indici descrittivi.</li>
+          <li><strong>Traslazione</strong>: cambia solo media/mediana/quantili (non var, std, IQR).</li>
+          <li><strong>Scala (\(/h\))</strong>: divide media, std, IQR, range per \(h\); divide la varianza per \(h^2\).</li>
+          <li><strong>Min-max</strong>: porta un intervallo \([a, b]\) in \([c, d]\); molto sensibile agli outlier.</li>
+          <li><strong>Standardizzazione</strong>: \(z = (x - \bar x)/s_x\); media 0, std 1; più robusta del min-max.</li>
+          <li><strong>Logaritmo</strong>: utile per dati con range esteso, comprime e simmetrizza.</li>
+        </ul>
+
+        <div class="quiz" data-id="q-final-1">
+          <h4>Vuoi confrontare due caratteri in unità diverse (cm e kg) sullo stesso
+            grafico. Cosa è più adatto?</h4>
+          <ul class="quiz-options">
+            <li>Disegnarli così come sono.</li>
+            <li>Sottrarre il minimo a entrambi.</li>
+            <li data-correct>Standardizzare entrambi (z-score).</li>
+            <li>Trasformare in logaritmo.</li>
+          </ul>
+        </div>
+
+        <div class="exercise">
+          <h4>Sfida finale — Pipeline di pulizia</h4>
+          <p>
+            Sul CSV qui sotto: (1) calcola lo z-score di <code>Weight</code> e
+            <code>Height</code>; (2) marca come «outlier» tutte le righe con
+            <code>|z| &gt; 2</code> in almeno una delle due colonne; (3) stampa il
+            DataFrame risultante con una colonna <code>is_outlier</code>.
+          </p>
+
+<pre data-runnable data-pandas="true" data-title="sfida.py" data-lang="python">CSV = """\
+Name;Height;Weight
+Iron Man;198.51;191.85
+Hulk;244.50;630.32
+Batman;188.04;95.78
+Superman;191.10;107.62
+Wonder Woman;183.13;74.74
+Spider-Man;177.95;72.97
+Wolverine;160.70;135.21
+Storm;180.39;58.96
+Thor;198.10;291.45
+Black Widow;170.30;58.39
+Captain America;188.06;108.10
+Joker;185.81;79.85
+Aquaman;185.71;146.96
+Catwoman;170.58;57.34
+Flash;185.36;90.74
+Cyborg;185.10;176.32
+Doctor Strange;187.96;81.46
+Magneto;188.10;87.55
+Penguin;167.91;79.43
+Groot;213.09;381.07
+"""
+import pandas as pd, io
+
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+# Tua soluzione qui
+</pre>
+        </div>
+
+        <p style="margin-top: 24px;">
+          Prossima fermata:
+          <strong><a href="lezione-07.html">L07 — Analisi della varianza</a></strong>
+          (ANOVA, gruppi e confronti).
+        </p>
+      </section>
+
+      <footer class="footer">
+        L06 · Trasformazione dei dati — Interactive Learning · Superhero Data Science
+      </footer>
+    </main>
+  </div>
+
+  <script src="assets/app.js" defer></script>
+</body>
+</html>

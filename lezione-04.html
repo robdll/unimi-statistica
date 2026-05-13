@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L04 · Indici di dispersione — Interactive Learning</title>
+  <meta name="description" content="Varianza e deviazione standard, quantili, box plot, Q-Q plot, simmetria e regola empirica." />
+  <link rel="stylesheet" href="assets/styles.css" />
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">SD</div>
+        <div>
+          <strong>Lezione 04</strong>
+          <small>Indici di dispersione</small>
+        </div>
+      </div>
+
+      <p style="margin: 0 0 8px;">
+        <a href="index.html" style="font-size:0.85rem;">← Torna all'indice</a>
+      </p>
+
+      <h2>In questa lezione</h2>
+      <ul class="toc">
+        <li><a href="#sec-perche">1. Perché la dispersione</a></li>
+        <li><a href="#sec-indici">2. Varianza, std e quantili</a></li>
+        <li><a href="#sec-describe">3. <code>describe()</code></a></li>
+        <li><a href="#sec-box">4. Box plot</a></li>
+        <li><a href="#sec-qq">5. Diagrammi Q-Q</a></li>
+        <li><a href="#sec-norm">6. Simmetria e regola empirica</a></li>
+        <li><a href="#sec-finale">7. Riepilogo &amp; sfida finale</a></li>
+      </ul>
+    </aside>
+
+    <main class="main">
+
+      <div class="theme-toggle">
+        <button class="btn ghost" type="button">🌙 Tema scuro</button>
+      </div>
+
+      <section class="hero">
+        <h1>L04 · Indici di dispersione</h1>
+        <p>
+          Due campioni possono avere la stessa media e raccontare storie completamente
+          diverse: uno concentrato attorno a un valore, l'altro «sparso ovunque».
+          Servono indici che misurino questa <strong>dispersione</strong>: varianza,
+          deviazione standard, quartili, box plot e Q-Q plot.
+        </p>
+        <div class="meta">
+          <span>≈ 40–55 minuti</span>
+          <span>9 quiz</span>
+          <span>4 esercizi</span>
+          <span>Statistica descrittiva</span>
+        </div>
+        <div class="progress-wrap" title="Progresso quiz">
+          <div class="progress-bar"></div>
+        </div>
+      </section>
+
+      <!-- ============== 1. PERCHÉ ============== -->
+      <section id="sec-perche">
+        <h2 class="section-title">1. Perché serve un indice di dispersione</h2>
+        <p>
+          Considera due eserciti di supereroi con la stessa <em>forza media</em> ma
+          formati molto diversi: nel primo tutti hanno indice 50, nel secondo metà
+          hanno 0 e metà 100. Stessa media, dispersione opposta. La media da sola è
+          un'informazione insufficiente: bisogna affiancarla a una misura di quanto
+          i dati si <em>spargono</em> intorno a essa.
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="why_dispersion.py" data-lang="python">import pandas as pd
+
+a = pd.Series([50, 50, 50, 50, 50])
+b = pd.Series([0, 0, 50, 100, 100])
+
+print(f"a: media = {a.mean():.1f}, std = {a.std():.2f}")
+print(f"b: media = {b.mean():.1f}, std = {b.std():.2f}")
+</pre>
+
+        <div class="callout info">
+          <strong>Convenzione pandas.</strong> <code>.var()</code> e <code>.std()</code>
+          calcolano gli indici <em>campionari</em>, cioè con divisione per <code>n-1</code>
+          (Bessel correction). Per la versione "popolazionale" usa
+          <code>ddof=0</code>.
+        </div>
+      </section>
+
+      <!-- ============== 2. INDICI ============== -->
+      <section id="sec-indici">
+        <h2 class="section-title">2. Varianza, std, quantili</h2>
+        <p>
+          Su una <code>Series</code> pandas:
+        </p>
+        <ul>
+          <li><code>.var()</code> → varianza campionaria \(s^2 = \frac{1}{n-1}\sum(x_i - \bar x)^2\);</li>
+          <li><code>.std()</code> → deviazione standard \(s = \sqrt{s^2}\) (stesse unità di misura dei dati);</li>
+          <li><code>.quantile(p)</code> → quantile di livello \(p \in [0, 1]\);</li>
+          <li><code>.min()</code>, <code>.max()</code> → estremi del campione.</li>
+        </ul>
+
+<pre data-runnable data-pandas="true" data-title="dispersion_basics.py" data-lang="python">CSV = """\
+Name;First appearance
+Iron Man;1963
+Hulk;1962
+Spider-Man;1962
+Wolverine;1974
+Storm;1975
+Thor;1962
+Black Widow;1964
+Captain America;1941
+Doctor Strange;1963
+Magneto;1963
+Batman;1939
+Superman;1938
+Wonder Woman;1941
+Aquaman;1941
+Flash;1956
+Cyborg;1980
+Joker;1940
+Catwoman;1940
+Robin;1940
+Penguin;1941
+"""
+import pandas as pd, io
+year = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')['First appearance']
+
+print(f"min       = {year.min()}")
+print(f"max       = {year.max()}")
+print(f"mediana   = {year.median():.1f}")
+print(f"varianza  = {year.var():.2f}")
+print(f"std       = {year.std():.2f}")
+print(f"q15       = {year.quantile(0.15):.1f}")
+print(f"q75       = {year.quantile(0.75):.1f}")
+print(f"IQR       = {year.quantile(0.75) - year.quantile(0.25):.1f}")
+print(f"range     = {year.max() - year.min()}")
+</pre>
+
+        <div class="quiz" data-id="q-disp-1">
+          <h4>Tra varianza e deviazione standard, quale ha le <em>stesse unità di
+            misura</em> dei dati?</h4>
+          <ul class="quiz-options">
+            <li>Varianza.</li>
+            <li data-correct>Deviazione standard.</li>
+            <li>Entrambe.</li>
+            <li>Nessuna delle due.</li>
+          </ul>
+          <div class="quiz-explain">
+            La varianza è la media dei <em>quadrati</em> degli scarti: ha unità
+            \([\text{unità}]^2\). Prendendo la radice si tornano alle unità originali —
+            ecco perché la std è spesso preferita quando si vuole "raccontare" la
+            dispersione.
+          </div>
+        </div>
+
+        <div class="quiz" data-id="q-disp-2">
+          <h4>Per ottenere il <strong>terzo quartile</strong> in pandas, quale chiamata è
+            corretta?</h4>
+          <ul class="quiz-options">
+            <li><code>s.quantile(3)</code></li>
+            <li data-correct><code>s.quantile(0.75)</code></li>
+            <li><code>s.q3()</code></li>
+            <li><code>s.quartile(3)</code></li>
+          </ul>
+          <div class="quiz-explain">
+            <code>quantile</code> accetta valori in <code>[0, 1]</code>. Il terzo
+            quartile coincide con il 75-esimo percentile = quantile 0.75.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 3. DESCRIBE ============== -->
+      <section id="sec-describe">
+        <h2 class="section-title">3. <code>describe()</code> — il riassunto in 8 numeri</h2>
+        <p>
+          Per evitare di chiamare un metodo alla volta, <code>describe()</code> produce
+          tutti gli indici descrittivi standard in un colpo solo: numero di
+          osservazioni non nulle, media, std, min, Q1, mediana, Q3, max.
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="describe.py" data-lang="python">CSV = """\
+Name;Weight
+Iron Man;191.85
+Hulk;630.32
+Batman;95.78
+Superman;107.62
+Wonder Woman;74.74
+Spider-Man;72.97
+Wolverine;135.21
+Storm;58.96
+Thor;291.45
+Black Widow;58.39
+Captain America;108.10
+Joker;79.85
+Aquaman;146.96
+Catwoman;57.34
+Flash;90.74
+Cyborg;176.32
+Venom;162.46
+Doctor Strange;81.46
+Magneto;87.55
+Penguin;79.43
+"""
+import pandas as pd, io
+w = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')['Weight']
+print(w.describe())
+</pre>
+
+        <div class="callout tip">
+          <strong>Custom percentili.</strong> Puoi passare la lista di percentili che ti
+          interessano: <code>w.describe(percentiles=[.10, .50, .90])</code>.
+        </div>
+      </section>
+
+      <!-- ============== 4. BOX PLOT ============== -->
+      <section id="sec-box">
+        <h2 class="section-title">4. Box plot</h2>
+        <p>
+          Un <strong>box plot</strong> (o <em>box-and-whiskers</em>) condensa graficamente
+          gli indici principali:
+        </p>
+        <ul>
+          <li>la <strong>scatola</strong> ha basi su Q1 e Q3 (l'altezza è quindi
+            l'<em>IQR</em>);</li>
+          <li>il <strong>segmento centrale</strong> indica la mediana;</li>
+          <li>i <strong>baffi</strong> si estendono fino al min e al max — oppure fino a
+            Q1 − 1.5·IQR e Q3 + 1.5·IQR, segnalando come «outlier» i punti oltre.</li>
+        </ul>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="boxplot.py" data-lang="python">CSV = """\
+Name;Weight
+Iron Man;191.85
+Hulk;630.32
+Batman;95.78
+Superman;107.62
+Wonder Woman;74.74
+Spider-Man;72.97
+Wolverine;135.21
+Storm;58.96
+Thor;291.45
+Black Widow;58.39
+Captain America;108.10
+Joker;79.85
+Aquaman;146.96
+Catwoman;57.34
+Flash;90.74
+Cyborg;176.32
+Venom;162.46
+Doctor Strange;81.46
+Magneto;87.55
+Penguin;79.43
+Groot;381.07
+Vision;135.27
+Hawkeye;104.92
+Black Panther;81.26
+"""
+import pandas as pd, io
+import matplotlib.pyplot as plt
+
+w = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')['Weight']
+
+# Default: gli outlier sono evidenziati con cerchi
+w.plot.box()
+plt.title("Box plot del peso (con outlier)")
+plt.show()
+
+# whis=(0, 100) → baffi fino a min e max, niente outlier
+w.plot.box(whis=(0, 100), vert=False, widths=.4)
+plt.title("Box plot orizzontale, baffi fino a min/max")
+plt.show()
+</pre>
+
+        <div class="quiz" data-id="q-box-1">
+          <h4>In un box plot di default, un <em>cerchio</em> oltre il baffo destro indica:</h4>
+          <ul class="quiz-options">
+            <li>Il valore della mediana.</li>
+            <li>Il terzo quartile.</li>
+            <li data-correct>Un potenziale <strong>outlier</strong> (oltre Q3 + 1.5·IQR).</li>
+            <li>Un dato mancante.</li>
+          </ul>
+          <div class="quiz-explain">
+            Con i <em>whiskers</em> di default (1.5·IQR), i punti oltre tale soglia
+            vengono mostrati come singoli cerchi, segnalandoli come potenziali
+            anomalie.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 5. Q-Q ============== -->
+      <section id="sec-qq">
+        <h2 class="section-title">5. Diagrammi Q-Q</h2>
+        <p>
+          Un <strong>Q-Q plot</strong> (quantile-quantile) confronta due distribuzioni
+          mettendo a coordinate <code>(quantile_di_A(p), quantile_di_B(p))</code> per
+          molti valori di <code>p ∈ [0, 1]</code>. Se i due campioni hanno la stessa
+          distribuzione, i punti si allineano sulla bisettrice del primo e del terzo
+          quadrante.
+        </p>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="qq_manual.py" data-lang="python">import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Due campioni "fittizi" con distribuzioni simili
+rng = np.random.default_rng(7)
+a = pd.Series(rng.normal(180, 8, 200), name='Marvel')
+b = pd.Series(rng.normal(180, 8, 200), name='DC')
+
+levels = np.linspace(0, 1, 100)
+plt.plot(a.quantile(levels).values, b.quantile(levels).values, 'o', alpha=.6)
+
+# Bisettrice di riferimento
+mn = min(a.min(), b.min())
+mx = max(a.max(), b.max())
+plt.plot([mn, mx], [mn, mx], '--', color='gray')
+
+plt.xlabel("Quantili A (Marvel)")
+plt.ylabel("Quantili B (DC)")
+plt.title("Q-Q plot: distribuzioni simili → punti vicini alla bisettrice")
+plt.show()
+</pre>
+
+        <p>
+          Se le distribuzioni sono diverse, la nuvola si <em>scosta</em> dalla
+          bisettrice in modo sistematico (curve a S, divergenza nelle code, ecc.).
+        </p>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="qq_diverso.py" data-lang="python">import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+rng = np.random.default_rng(11)
+female = pd.Series(rng.normal(63, 6, 150))   # peso femminile
+male   = pd.Series(rng.normal(78, 9, 150))   # peso maschile
+
+levels = np.linspace(0, 1, 100)
+plt.plot(female.quantile(levels).values, male.quantile(levels).values, 'o', alpha=.6)
+plt.plot([40, 100], [40, 100], '--', color='gray')
+plt.xlabel("Quantili (F)")
+plt.ylabel("Quantili (M)")
+plt.title("Distribuzioni diverse: nuvola lontana dalla bisettrice")
+plt.show()
+</pre>
+
+        <div class="callout tip">
+          <strong>statsmodels</strong> ha la funzione
+          <code>sm.qqplot_2samples(a, b, line='45')</code> che produce lo stesso
+          risultato in una riga. Per non rallentare la prima esecuzione la teniamo
+          opzionale: se vuoi provarla, attiva <code>data-statsmodels="true"</code>
+          sul blocco di codice.
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 1 — Confronta due distribuzioni con il Q-Q plot</h4>
+          <p>
+            Genera due campioni: il primo da una normale, il secondo da una distribuzione
+            <em>esponenziale</em> con la stessa media. Disegna il Q-Q plot e commenta
+            l'allineamento con la bisettrice.
+          </p>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="esercizio1.py" data-lang="python">import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+rng = np.random.default_rng(0)
+# Tua soluzione qui:
+# - normal: media 5, std 1
+# - exponential: scale = 5 (quindi media 5)
+# - calcola i quantili e disegna lo scatter
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="soluzione1.py" data-lang="python">import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+rng = np.random.default_rng(0)
+norm  = pd.Series(rng.normal(5, 1, 500))
+expo  = pd.Series(rng.exponential(5, 500))
+
+levels = np.linspace(0.01, 0.99, 100)
+plt.plot(norm.quantile(levels).values, expo.quantile(levels).values, 'o', alpha=.5)
+mn, mx = 0, 25
+plt.plot([mn, mx], [mn, mx], '--', color='gray')
+plt.xlabel("Quantili Normale (μ=5, σ=1)")
+plt.ylabel("Quantili Esponenziale (scale=5)")
+plt.title("Q-Q plot: stessa media, distribuzioni molto diverse")
+plt.show()
+
+# La nuvola si curva: la coda dell'esponenziale è molto più lunga.
+</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 6. SIMMETRIA E REGOLA EMPIRICA ============== -->
+      <section id="sec-norm">
+        <h2 class="section-title">6. Simmetria, normalità e regola empirica</h2>
+        <p>
+          Una distribuzione è <strong>approssimativamente simmetrica</strong> quando
+          istogramma e box plot mostrano una forma «a specchio»: nel box plot, baffi
+          di lunghezza simile e mediana al centro della scatola.
+        </p>
+
+        <p>L'asimmetria si manifesta come <em>coda</em>:</p>
+        <ul>
+          <li><strong>Skew destro (positivo)</strong>: coda lunga a destra, mediana &lt; media (peso, BMI…);</li>
+          <li><strong>Skew sinistro (negativo)</strong>: coda lunga a sinistra, mediana &gt; media (es. punteggi su soglia).</li>
+        </ul>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="skew_demo.py" data-lang="python">import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+rng = np.random.default_rng(42)
+
+simmetrica = pd.Series(rng.normal(24, 2, 1000))
+sk_dx      = pd.Series(rng.gamma(2, size=1000))
+sk_sx      = pd.Series(rng.beta(20, 2, size=1000))
+
+fig, axs = plt.subplots(3, 2, figsize=(8, 7),
+                        gridspec_kw={'width_ratios': [3, 2]})
+for ax_h, ax_b, s, t in zip(axs[:, 0], axs[:, 1],
+                            [simmetrica, sk_dx, sk_sx],
+                            ["≈ simmetrica", "skew destro", "skew sinistro"]):
+    s.plot.hist(ax=ax_h, bins=20)
+    ax_h.set_title(t)
+    s.plot.box(ax=ax_b, vert=False, whis=(0, 100), widths=.4)
+plt.tight_layout()
+plt.show()
+</pre>
+
+        <h3>Regola empirica (68-95-99.7)</h3>
+        <p>
+          Quando la distribuzione è <strong>approssimativamente normale</strong> (a
+          campana e simmetrica), valgono queste percentuali approssimative dei dati
+          entro <code>k</code> deviazioni standard dalla media:
+        </p>
+        <ul>
+          <li><strong>~68%</strong> entro 1 std;</li>
+          <li><strong>~95%</strong> entro 2 std;</li>
+          <li><strong>~99.7%</strong> entro 3 std.</li>
+        </ul>
+
+<pre data-runnable data-pandas="true" data-title="regola_empirica.py" data-lang="python">import pandas as pd
+import numpy as np
+
+rng = np.random.default_rng(0)
+sample = pd.Series(rng.normal(180, 7, 5000), name='Height')
+
+m, s = sample.mean(), sample.std()
+for k in (1, 2, 3):
+    pct = ((sample - m).abs() &lt; k * s).mean()
+    print(f"entro {k}σ → {pct:.1%}")
+</pre>
+
+        <div class="quiz" data-id="q-norm-1">
+          <h4>Per la regola empirica, circa quale percentuale dei dati cade entro
+            <strong>2 deviazioni standard</strong> dalla media?</h4>
+          <ul class="quiz-options">
+            <li>~50%</li>
+            <li>~68%</li>
+            <li data-correct>~95%</li>
+            <li>~99.7%</li>
+          </ul>
+        </div>
+
+        <div class="quiz" data-id="q-norm-2">
+          <h4>Una distribuzione del peso ha una <em>lunga coda</em> a destra. Cosa ti
+            aspetti?</h4>
+          <ul class="quiz-options">
+            <li><code>media &lt; mediana</code></li>
+            <li data-correct><code>media &gt; mediana</code></li>
+            <li><code>media = mediana</code></li>
+            <li>Dipende dall'IQR.</li>
+          </ul>
+          <div class="quiz-explain">
+            La coda destra "tira" la media verso l'alto, mentre la mediana, robusta
+            agli outlier, resta più al centro. Quindi <code>mean &gt; median</code>.
+          </div>
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 2 — Verifica la regola empirica</h4>
+          <p>
+            Sul CSV qui sotto (altezze di supereroi entro un range realistico),
+            verifica numericamente la regola empirica e confronta con i valori teorici.
+          </p>
+
+<pre data-runnable data-pandas="true" data-title="esercizio2.py" data-lang="python">CSV = """\
+Name;Height
+Iron Man;198.51
+Hulk;186.50
+Batman;188.04
+Superman;191.10
+Wonder Woman;183.13
+Spider-Man;177.95
+Wolverine;160.70
+Storm;180.39
+Thor;198.10
+Black Widow;170.30
+Captain America;188.06
+Joker;185.81
+Aquaman;185.71
+Catwoman;170.58
+Flash;185.36
+Cyborg;185.10
+Venom;179.30
+Doctor Strange;187.96
+Magneto;188.10
+Penguin;167.91
+Vision;190.20
+Hawkeye;191.21
+Black Panther;180.34
+Robin;167.64
+Mystique;177.53
+Rogue;172.99
+Jean Grey;167.61
+Lex Luthor;188.34
+Spider Gwen;170.32
+Daredevil;185.81
+"""
+import pandas as pd, io
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+
+# Tua soluzione qui
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-pandas="true" data-title="soluzione2.py" data-lang="python">CSV = """\
+Name;Height
+Iron Man;198.51
+Hulk;186.50
+Batman;188.04
+Superman;191.10
+Wonder Woman;183.13
+Spider-Man;177.95
+Wolverine;160.70
+Storm;180.39
+Thor;198.10
+Black Widow;170.30
+Captain America;188.06
+Joker;185.81
+Aquaman;185.71
+Catwoman;170.58
+Flash;185.36
+Cyborg;185.10
+Venom;179.30
+Doctor Strange;187.96
+Magneto;188.10
+Penguin;167.91
+Vision;190.20
+Hawkeye;191.21
+Black Panther;180.34
+Robin;167.64
+Mystique;177.53
+Rogue;172.99
+Jean Grey;167.61
+Lex Luthor;188.34
+Spider Gwen;170.32
+Daredevil;185.81
+"""
+import pandas as pd, io
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+
+s = df['Height']
+m, sd = s.mean(), s.std()
+print(f"media = {m:.1f} cm, std = {sd:.2f} cm\n")
+
+teorici = {1: 0.6827, 2: 0.9545, 3: 0.9973}
+for k in (1, 2, 3):
+    pct = ((s - m).abs() &lt; k * sd).mean()
+    print(f"entro {k}σ: osservato {pct:.1%}, teorico {teorici[k]:.1%}")
+</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 7. RIEPILOGO ============== -->
+      <section id="sec-finale">
+        <h2 class="section-title">7. Riepilogo &amp; sfida finale</h2>
+        <ul>
+          <li><strong>Varianza/std</strong>: misurano la dispersione attorno alla media; <code>.var()</code>/<code>.std()</code> usano <code>n-1</code>.</li>
+          <li><strong>Quartili e IQR</strong>: misurano la dispersione "robusta"; <code>q.quantile(p)</code> per ogni livello.</li>
+          <li><strong><code>describe()</code></strong>: tutte le statistiche descrittive in un colpo solo.</li>
+          <li><strong>Box plot</strong>: scatola = IQR, segmento = mediana; <code>whis=(0,100)</code> per disabilitare il flagging degli outlier.</li>
+          <li><strong>Q-Q plot</strong>: stesso pattern lungo la bisettrice ⇒ stessa distribuzione; deviazioni sistematiche ⇒ distribuzioni diverse.</li>
+          <li><strong>Regola empirica</strong>: 68-95-99.7 vale (approssimativamente) solo per distribuzioni a campana.</li>
+        </ul>
+
+        <div class="quiz" data-id="q-final-1">
+          <h4>Quale di queste affermazioni è vera per due dataset con la stessa media?</h4>
+          <ul class="quiz-options">
+            <li>Hanno per forza la stessa varianza.</li>
+            <li>Hanno la stessa mediana.</li>
+            <li data-correct>Possono avere dispersioni completamente diverse.</li>
+            <li>Hanno lo stesso IQR.</li>
+          </ul>
+        </div>
+
+        <div class="quiz" data-id="q-final-2">
+          <h4>Hai un istogramma con coda lunga a destra. Quale strumento NON è adatto a
+            riassumerlo con un valore "centrale"?</h4>
+          <ul class="quiz-options">
+            <li>Mediana.</li>
+            <li data-correct>Media (perché trascinata dalla coda).</li>
+            <li>Quantile 0.5.</li>
+            <li>Moda.</li>
+          </ul>
+          <div class="quiz-explain">
+            Outlier nella coda spostano la media e la rendono poco rappresentativa.
+            Mediana, quantile 0.5 e moda sono molto più robuste.
+          </div>
+        </div>
+
+        <div class="exercise">
+          <h4>Sfida finale — Riassunto descrittivo + box plot di un editore</h4>
+          <p>
+            Sul CSV qui sotto: (a) calcola <code>describe()</code> separatamente per
+            Marvel e DC sull'attributo <code>Strength</code>; (b) disegna due box plot
+            affiancati per confrontare le distribuzioni.
+          </p>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="sfida.py" data-lang="python">CSV = """\
+Name;Publisher;Strength
+Iron Man;Marvel Comics;85
+Hulk;Marvel Comics;100
+Spider-Man;Marvel Comics;55
+Wolverine;Marvel Comics;75
+Storm;Marvel Comics;30
+Thor;Marvel Comics;100
+Black Widow;Marvel Comics;13
+Captain America;Marvel Comics;19
+Doctor Strange;Marvel Comics;10
+Magneto;Marvel Comics;55
+Vision;Marvel Comics;75
+Hawkeye;Marvel Comics;14
+Daredevil;Marvel Comics;19
+Black Panther;Marvel Comics;16
+Mystique;Marvel Comics;14
+Rogue;Marvel Comics;65
+Jean Grey;Marvel Comics;20
+Batman;DC Comics;26
+Superman;DC Comics;100
+Wonder Woman;DC Comics;100
+Aquaman;DC Comics;85
+Flash;DC Comics;26
+Cyborg;DC Comics;80
+Joker;DC Comics;10
+Catwoman;DC Comics;14
+Robin;DC Comics;14
+Penguin;DC Comics;9
+Lex Luthor;DC Comics;10
+Green Lantern;DC Comics;75
+Martian Manhunter;DC Comics;100
+"""
+import pandas as pd, io
+import matplotlib.pyplot as plt
+
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+
+# Tua soluzione qui
+</pre>
+        </div>
+
+        <p style="margin-top: 24px;">
+          Prossima fermata:
+          <strong><a href="lezione-05.html">L05 — Indici di eterogeneità</a></strong>
+          (Gini, entropia, alberi di decisione, concentrazione).
+        </p>
+      </section>
+
+      <footer class="footer">
+        L04 · Indici di dispersione — Interactive Learning · Superhero Data Science
+      </footer>
+    </main>
+  </div>
+
+  <script src="assets/app.js" defer></script>
+</body>
+</html>

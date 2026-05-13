@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L05 · Indici di eterogeneità — Interactive Learning</title>
+  <meta name="description" content="Indice di Gini, entropia, alberi di decisione e indici di concentrazione (curva di Lorenz)." />
+  <link rel="stylesheet" href="assets/styles.css" />
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">SD</div>
+        <div>
+          <strong>Lezione 05</strong>
+          <small>Eterogeneità</small>
+        </div>
+      </div>
+
+      <p style="margin: 0 0 8px;">
+        <a href="index.html" style="font-size:0.85rem;">← Torna all'indice</a>
+      </p>
+
+      <h2>In questa lezione</h2>
+      <ul class="toc">
+        <li><a href="#sec-perche">1. Perché serve un indice di eterogeneità</a></li>
+        <li><a href="#sec-gini">2. Indice di Gini</a></li>
+        <li><a href="#sec-entropy">3. Entropia</a></li>
+        <li><a href="#sec-tree">4. Alberi di decisione (sklearn)</a></li>
+        <li><a href="#sec-conc">5. Indici di concentrazione</a></li>
+        <li><a href="#sec-finale">6. Riepilogo &amp; sfida finale</a></li>
+      </ul>
+    </aside>
+
+    <main class="main">
+
+      <div class="theme-toggle">
+        <button class="btn ghost" type="button">🌙 Tema scuro</button>
+      </div>
+
+      <section class="hero">
+        <h1>L05 · Indici di eterogeneità</h1>
+        <p>
+          Per i caratteri qualitativi nominali non ha senso parlare di varianza
+          (manca la media). Servono nuovi indici che misurino quanto «sparpagliata» è
+          una distribuzione di frequenze: <strong>Gini</strong> ed
+          <strong>entropia</strong>. Vedremo poi come questi stessi indici sono il
+          motore degli <strong>alberi di decisione</strong>, e infine introdurremo gli
+          <strong>indici di concentrazione</strong> tipici dell'analisi della ricchezza.
+        </p>
+        <div class="meta">
+          <span>≈ 50–65 minuti</span>
+          <span>9 quiz</span>
+          <span>4 esercizi</span>
+          <span>Include scikit-learn</span>
+        </div>
+        <div class="progress-wrap" title="Progresso quiz">
+          <div class="progress-bar"></div>
+        </div>
+      </section>
+
+      <!-- ============== 1. PERCHÉ ============== -->
+      <section id="sec-perche">
+        <h2 class="section-title">1. Perché un nuovo indice</h2>
+        <p>
+          Considera due dataset che descrivono il colore degli occhi di 10 supereroi:
+        </p>
+        <ul>
+          <li>A: tutti hanno gli occhi blu;</li>
+          <li>B: 2 blu, 2 verdi, 2 marroni, 2 grigi, 2 nocciola.</li>
+        </ul>
+        <p>
+          Sono entrambi qualitativi nominali, non possiamo calcolare una varianza.
+          Ma intuitivamente B è molto più <strong>eterogeneo</strong> di A. Vogliamo
+          un indice numerico che catturi questa idea: massima omogeneità (un solo
+          valore osservato) ⇒ indice = 0; massima eterogeneità (tutti i valori
+          equiprobabili) ⇒ indice massimo.
+        </p>
+      </section>
+
+      <!-- ============== 2. GINI ============== -->
+      <section id="sec-gini">
+        <h2 class="section-title">2. Indice di Gini</h2>
+        <p>
+          Date \(s\) modalità con frequenze relative \(f_1, \dots, f_s\), l'indice di
+          eterogeneità di Gini è
+        </p>
+        <p>\[ I = 1 - \sum_{i=1}^{s} f_i^2 \]</p>
+        <p>
+          Valori notevoli:
+        </p>
+        <ul>
+          <li>massima omogeneità (una sola modalità con \(f_j = 1\)) ⇒ \(I = 0\);</li>
+          <li>massima eterogeneità (tutte le \(f_i = 1/s\)) ⇒ \(I = 1 - 1/s = (s-1)/s\).</li>
+        </ul>
+        <p>
+          Per ottenere un indice in <code>[0, 1]</code> indipendente dal numero di
+          modalità, si normalizza:
+        </p>
+        <p>\[ I' = \frac{s}{s-1} \cdot I \]</p>
+
+<pre data-runnable data-pandas="true" data-title="gini.py" data-lang="python">CSV = """\
+Name;Eye color;Hair color;Publisher
+Iron Man;Blue;Black;Marvel Comics
+Hulk;Green;Green;Marvel Comics
+Batman;Blue;Black;DC Comics
+Superman;Blue;Black;DC Comics
+Wonder Woman;Blue;Black;DC Comics
+Spider-Man;Hazel;Brown;Marvel Comics
+Wolverine;Blue;Black;Marvel Comics
+Storm;Blue;White;Marvel Comics
+Thor;Blue;Blond;Marvel Comics
+Black Widow;Green;Auburn;Marvel Comics
+Captain America;Blue;Blond;Marvel Comics
+Joker;Green;Green;DC Comics
+Aquaman;Blue;Blond;DC Comics
+Catwoman;Green;Black;DC Comics
+Flash;Green;Red;DC Comics
+Cyborg;Brown;Black;DC Comics
+Venom;Blue;Black;Marvel Comics
+Doctor Strange;Grey;Black;Marvel Comics
+Magneto;Blue;Grey;Marvel Comics
+Penguin;Blue;Black;DC Comics
+"""
+import pandas as pd, io
+
+heroes = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+
+def gini(series):
+    f = series.value_counts(normalize=True)
+    return 1 - (f ** 2).sum()
+
+def gini_norm(series):
+    f = series.value_counts(normalize=True)
+    s = len(f)
+    return (1 - (f ** 2).sum()) * s / (s - 1) if s &gt; 1 else 0.0
+
+for col in ['Eye color', 'Hair color', 'Publisher']:
+    print(f"{col:&lt;12}  Gini = {gini(heroes[col]):.3f}   Gini norm = {gini_norm(heroes[col]):.3f}")
+</pre>
+
+        <p>
+          Vediamo il comportamento dell'indice nel caso più semplice di due sole
+          modalità con frequenze \(f\) e \(1-f\):
+        </p>
+
+<pre data-runnable data-matplotlib="true" data-title="gini_2val.py" data-lang="python">import numpy as np
+import matplotlib.pyplot as plt
+
+f = np.linspace(0, 1, 100)
+gini_two = 1 - f**2 - (1 - f)**2
+
+plt.plot(f, gini_two)
+plt.title("Indice di Gini con 2 modalità: I = 1 - f² - (1-f)²")
+plt.xlabel("f (frequenza della prima modalità)")
+plt.ylabel("Indice di Gini")
+plt.show()
+</pre>
+
+        <div class="quiz" data-id="q-gini-1">
+          <h4>Quanto vale l'indice di Gini per un campione in cui tutti gli individui
+            hanno la <strong>stessa</strong> etichetta?</h4>
+          <ul class="quiz-options">
+            <li>1</li>
+            <li data-correct>0</li>
+            <li>0.5</li>
+            <li>Dipende dal numero di etichette possibili.</li>
+          </ul>
+          <div class="quiz-explain">
+            Una sola modalità con frequenza 1: \(I = 1 - 1^2 = 0\). Massima omogeneità
+            ⇒ indice nullo.
+          </div>
+        </div>
+
+        <div class="quiz" data-id="q-gini-2">
+          <h4>Per <em>s = 4</em> modalità tutte equifrequenti, quanto vale l'indice di
+            Gini <em>non</em> normalizzato?</h4>
+          <ul class="quiz-options">
+            <li>1</li>
+            <li>0.5</li>
+            <li data-correct>0.75</li>
+            <li>0.25</li>
+          </ul>
+          <div class="quiz-explain">
+            Con \(f_i = 1/4\) per ogni \(i\): \(I = 1 - 4 \cdot (1/4)^2 = 1 - 1/4 = 0.75\).
+            Coincide con \((s-1)/s = 3/4\).
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 3. ENTROPIA ============== -->
+      <section id="sec-entropy">
+        <h2 class="section-title">3. Entropia</h2>
+        <p>L'<strong>entropia</strong> di una distribuzione discreta è</p>
+        <p>\[ H = -\sum_{i=1}^{s} f_i \log_2 f_i \]</p>
+        <p>
+          (con la convenzione \(0 \log 0 = 0\)). Misurata in <em>bit</em> quando si usa
+          il logaritmo in base 2. Anche qui: minimo \(0\) in caso di omogeneità,
+          massimo \(\log_2 s\) in caso di equidistribuzione. La versione normalizzata è
+          \(H' = H / \log_2 s\).
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="entropy.py" data-lang="python">CSV = """\
+Name;Eye color;Publisher
+Iron Man;Blue;Marvel Comics
+Hulk;Green;Marvel Comics
+Batman;Blue;DC Comics
+Superman;Blue;DC Comics
+Wonder Woman;Blue;DC Comics
+Spider-Man;Hazel;Marvel Comics
+Wolverine;Blue;Marvel Comics
+Storm;Blue;Marvel Comics
+Thor;Blue;Marvel Comics
+Black Widow;Green;Marvel Comics
+Captain America;Blue;Marvel Comics
+Joker;Green;DC Comics
+Aquaman;Blue;DC Comics
+Catwoman;Green;DC Comics
+Flash;Green;DC Comics
+Cyborg;Brown;DC Comics
+Venom;Blue;Marvel Comics
+Doctor Strange;Grey;Marvel Comics
+Magneto;Blue;Marvel Comics
+Penguin;Blue;DC Comics
+"""
+import pandas as pd, io
+import numpy as np
+
+heroes = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+
+def entropy(series, normalized=False):
+    f = series.value_counts(normalize=True)
+    h = -(f * np.log2(f)).sum()
+    if normalized and len(f) &gt; 1:
+        h /= np.log2(len(f))
+    return h
+
+for col in ['Eye color', 'Publisher']:
+    print(f"{col:&lt;12}  H = {entropy(heroes[col]):.3f} bit"
+          f"   H' = {entropy(heroes[col], normalized=True):.3f}")
+</pre>
+
+        <p>
+          Anche per l'entropia, nel caso di due modalità il grafico è "a campana":
+          massimo in <code>f = 1/2</code>.
+        </p>
+
+<pre data-runnable data-matplotlib="true" data-title="entropy_2val.py" data-lang="python">import numpy as np
+import matplotlib.pyplot as plt
+
+def entropy_two(f):
+    if f in (0, 1):
+        return 0
+    return -f * np.log2(f) - (1 - f) * np.log2(1 - f)
+
+f = np.linspace(0.001, 0.999, 200)
+H = [entropy_two(x) for x in f]
+
+plt.plot(f, H)
+plt.title("Entropia (2 modalità): massima in f=0.5")
+plt.xlabel("f")
+plt.ylabel("H (bit)")
+plt.show()
+</pre>
+
+        <div class="callout info">
+          <strong>Gini vs entropia.</strong> Le due funzioni hanno andamento qualitativo
+          molto simile. In pratica producono risultati spesso indistinguibili,
+          ma differiscono nelle code:l'entropia "punisce" più severamente i casi
+          molto sbilanciati. Nei modelli di machine learning entrambe sono
+          opzioni standard (parametro <code>criterion</code> in scikit-learn).
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 1 — Implementa Gini ed entropia</h4>
+          <p>
+            Implementa due funzioni <code>my_gini</code> e <code>my_entropy</code> che
+            accettano una <code>pd.Series</code> e ritornano i rispettivi indici
+            (<em>non</em> normalizzati). Verifica su una distribuzione uniforme di
+            5 modalità che valgano \(I = 4/5\) e \(H = \log_2 5\).
+          </p>
+
+<pre data-runnable data-pandas="true" data-title="esercizio1.py" data-lang="python">import pandas as pd
+import numpy as np
+
+# Tua soluzione qui:
+# def my_gini(series): ...
+# def my_entropy(series): ...
+
+# Test
+s = pd.Series(list("ABCDE") * 10)  # 5 modalità equiprobabili
+# print(my_gini(s), my_entropy(s))
+# Atteso ≈ (0.8, 2.3219)
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-pandas="true" data-title="soluzione1.py" data-lang="python">import pandas as pd
+import numpy as np
+
+def my_gini(series):
+    f = series.value_counts(normalize=True)
+    return 1 - (f ** 2).sum()
+
+def my_entropy(series):
+    f = series.value_counts(normalize=True)
+    return -(f * np.log2(f)).sum()
+
+s = pd.Series(list("ABCDE") * 10)
+print(f"Gini    = {my_gini(s):.4f}  (atteso {4/5:.4f})")
+print(f"Entropy = {my_entropy(s):.4f}  (atteso {np.log2(5):.4f})")
+</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 4. ALBERI ============== -->
+      <section id="sec-tree">
+        <h2 class="section-title">4. Alberi di decisione</h2>
+        <p>
+          Gli indici di eterogeneità sono il cuore degli <strong>alberi di
+          decisione</strong>. L'algoritmo, in pratica, cerca <em>quale attributo</em> e
+          <em>quale soglia</em> separano i dati in due gruppi più omogenei. Ripete poi
+          la ricerca dentro ciascun gruppo, fino a raggiungere foglie sufficientemente
+          pure.
+        </p>
+
+        <p>
+          Calcoliamo manualmente la "qualità" di una soglia sull'attributo
+          <code>Strength</code> per separare buoni e cattivi:
+        </p>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="split_quality.py" data-lang="python">import pandas as pd
+import matplotlib.pyplot as plt
+
+DATA = pd.DataFrame({
+    'Name':  ['Wonder Woman','Aquaman','Cyborg','Flash','Thor',
+              'Black Manta','Penguin','Joker','Deathstroke','Bizarro'],
+    'Strength': [100, 85, 80, 26, 100, 35, 9, 10, 55, 75],
+    'label': ['good']*5 + ['bad']*5
+}).set_index('Name')
+
+def gini_two(p):
+    return 1 - p**2 - (1 - p)**2
+
+def split_score(thr):
+    left  = DATA[DATA['Strength'] &lt;= thr]
+    right = DATA[DATA['Strength'] &gt;  thr]
+    g_left  = gini_two((left ['label'] == 'bad').mean()) if len(left)  else 0
+    g_right = gini_two((right['label'] == 'bad').mean()) if len(right) else 0
+    return (len(left) * g_left + len(right) * g_right) / len(DATA)
+
+thresholds = range(5, 110, 5)
+scores = [split_score(t) for t in thresholds]
+
+plt.plot(list(thresholds), scores, marker='o')
+plt.title("Gini medio dopo split su Strength ≤ thr")
+plt.xlabel("threshold")
+plt.ylabel("Gini medio (più basso = meglio)")
+plt.show()
+
+best = min(zip(scores, thresholds))
+print(f"Migliore threshold: {best[1]} (Gini medio = {best[0]:.3f})")
+</pre>
+
+        <p>
+          Per costruire un albero "vero", non serve fare tutto a mano: scikit-learn
+          mette a disposizione <code>DecisionTreeClassifier</code>. La cella sotto
+          richiede di caricare il pacchetto <code>scikit-learn</code> (al primo run
+          ci mette qualche secondo).
+        </p>
+
+<pre data-runnable data-pandas="true" data-sklearn="true" data-title="decision_tree.py" data-lang="python">import pandas as pd
+from sklearn import tree
+from sklearn.preprocessing import LabelEncoder
+
+CSV = """\
+Name;Height;Weight;Gender;Eye color;Strength;label
+Wonder Woman;183;74;F;Blue;100;good
+Aquaman;185;146;M;Blue;85;good
+Cyborg;185;176;M;Brown;80;good
+Flash;185;90;M;Green;26;good
+Thor;198;291;M;Blue;100;good
+Captain America;188;108;M;Blue;19;good
+Spider-Man;177;72;M;Hazel;55;good
+Wolverine;160;135;M;Blue;75;good
+Black Manta;185;100;M;Brown;35;bad
+Penguin;167;79;M;Blue;9;bad
+Joker;185;79;M;Green;10;bad
+Deathstroke;191;102;M;Blue;55;bad
+Bizarro;191;155;M;Red;75;bad
+Lex Luthor;188;94;M;Green;10;bad
+Mystique;177;55;F;Yellow;14;bad
+"""
+import io
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+
+# Codifico le categoriche in numeri
+for col in ['Gender', 'Eye color']:
+    df[col] = LabelEncoder().fit_transform(df[col])
+
+X = df.drop(columns='label')
+y = df['label']
+
+clf = tree.DecisionTreeClassifier(criterion='gini', max_depth=3, random_state=0)
+clf.fit(X, y)
+
+print("Predizioni:", list(clf.predict(X)))
+print("Etichette : ", list(y))
+
+# Rappresentazione testuale dell'albero
+print("\nAlbero:\n", tree.export_text(clf, feature_names=list(X.columns)))
+</pre>
+
+        <div class="callout warning">
+          <strong>Generalizzazione vs memorizzazione.</strong> Se valuti l'albero sugli
+          stessi dati con cui l'hai costruito, il risultato è ottimisticamente alto:
+          potrebbe avere semplicemente <em>memorizzato</em> il training set. Per una
+          valutazione onesta serve un test set separato (lo vedremo in L08).
+        </div>
+
+        <div class="quiz" data-id="q-tree-1">
+          <h4>L'albero di decisione cerca lo split che:</h4>
+          <ul class="quiz-options">
+            <li>massimizza il numero di foglie.</li>
+            <li>massimizza l'entropia dei figli.</li>
+            <li data-correct>minimizza l'<em>eterogeneità media</em> dei figli (Gini o entropia).</li>
+            <li>sceglie l'attributo a caso.</li>
+          </ul>
+          <div class="quiz-explain">
+            L'idea è ottenere figli il più possibile <em>puri</em> (omogenei rispetto
+            all'etichetta). Si misura la purezza con Gini o entropia, e si sceglie lo
+            split che la massimizza (= minimizza l'eterogeneità media pesata).
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 5. CONCENTRAZIONE ============== -->
+      <section id="sec-conc">
+        <h2 class="section-title">5. Indici di concentrazione (Lorenz)</h2>
+        <p>
+          Gli indici di concentrazione misurano <em>quanto equamente</em> una
+          quantità (ricchezza, ricavi, ore di lavoro…) è distribuita su una
+          popolazione. Sono concettualmente diversi dalla varianza: chiedono «pochi
+          individui detengono quasi tutto?» piuttosto che «quanto si discostano dalla
+          media?».
+        </p>
+
+        <p>Ordinati i valori \(a_1 \le a_2 \le \dots \le a_n\), si definiscono:</p>
+        <ul>
+          <li>\(F_i = i / n\): frequenza relativa cumulata fino all'\(i\)-esima osservazione;</li>
+          <li>\(Q_i = (\sum_{k=1}^i a_k) / \mathrm{TOT}\): quantità relativa cumulata.</li>
+        </ul>
+        <p>
+          La spezzata che congiunge i punti \((F_i, Q_i)\) è la
+          <strong>curva di Lorenz</strong>. Quanto più si discosta dalla bisettrice
+          (equidistribuzione), tanto più la distribuzione è concentrata.
+        </p>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="lorenz.py" data-lang="python">import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+CSV = """\
+Name;Strength
+Iron Man;85
+Hulk;100
+Batman;26
+Superman;100
+Wonder Woman;100
+Spider-Man;55
+Wolverine;75
+Storm;30
+Thor;100
+Black Widow;13
+Captain America;19
+Joker;10
+Aquaman;85
+Catwoman;14
+Flash;26
+Cyborg;80
+Venom;85
+Doctor Strange;10
+Magneto;55
+Penguin;9
+Lex Luthor;10
+Robin;14
+"""
+import io
+strength = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')['Strength']
+
+s_sorted = strength.sort_values().values
+n = len(s_sorted)
+F = np.arange(1, n+1) / n
+Q = np.cumsum(s_sorted) / s_sorted.sum()
+
+plt.fill_between(F, F, Q, alpha=0.2)
+plt.plot([0, 1], [0, 1], '--', color='gray', label='equidistribuzione')
+plt.plot(F, Q, color='blue', linewidth=2, label='curva di Lorenz')
+plt.xlabel("F (frazione cumulata di individui)")
+plt.ylabel("Q (frazione cumulata di forza)")
+plt.legend()
+plt.title("Curva di Lorenz: forza dei supereroi")
+plt.show()
+
+# Indice di concentrazione di Gini: G = 2 * sum(F - Q) / (n - 1)
+G = 2 * (F[:-1] - Q[:-1]).sum() / (n - 1)
+print(f"Indice di concentrazione di Gini: G = {G:.3f}  (0 = equa, 1 = massima)")
+</pre>
+
+        <div class="callout info">
+          <strong>Due «Gini».</strong> Il <em>coefficiente di concentrazione di Gini</em>
+          (questa sezione) è una cosa diversa dall'<em>indice di eterogeneità di
+          Gini</em> visto sopra. Sono entrambi dovuti a Corrado Gini e si calcolano
+          su frequenze cumulate, ma rispondono a domande diverse: «quanto è
+          concentrata?» vs «quanto è varia?».
+        </div>
+
+        <div class="quiz" data-id="q-conc-1">
+          <h4>Una curva di Lorenz coincidente con la bisettrice indica:</h4>
+          <ul class="quiz-options">
+            <li>massima concentrazione.</li>
+            <li data-correct>distribuzione perfettamente equa.</li>
+            <li>nessun dato.</li>
+            <li>solo una modalità.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ============== 6. RIEPILOGO ============== -->
+      <section id="sec-finale">
+        <h2 class="section-title">6. Riepilogo &amp; sfida finale</h2>
+        <ul>
+          <li>Per i dati <strong>qualitativi nominali</strong> non si calcola la varianza: si usano <strong>Gini</strong> ed <strong>entropia</strong>.</li>
+          <li><strong>Gini</strong>: \(I = 1 - \sum f_i^2\). Versione normalizzata per confronti tra distribuzioni con \(s\) diversi.</li>
+          <li><strong>Entropia</strong>: \(H = -\sum f_i \log_2 f_i\). Misurata in bit (logaritmo base 2).</li>
+          <li>Entrambi gli indici guidano gli split degli <strong>alberi di decisione</strong> (sklearn: <code>criterion='gini'</code> o <code>'entropy'</code>).</li>
+          <li>Per misurare <strong>concentrazione</strong> di una grandezza condivisibile: <strong>curva di Lorenz</strong> + coefficiente \(G\).</li>
+        </ul>
+
+        <div class="quiz" data-id="q-final-1">
+          <h4>Hai un campione con <strong>una sola etichetta osservata</strong>. Quale
+            coppia di valori è corretta?</h4>
+          <ul class="quiz-options">
+            <li>Gini = 1, entropia = 1</li>
+            <li data-correct>Gini = 0, entropia = 0</li>
+            <li>Gini = 0.5, entropia = 0.5</li>
+            <li>Indeterminati</li>
+          </ul>
+        </div>
+
+        <div class="exercise">
+          <h4>Sfida finale — Gini massimo</h4>
+          <p>
+            Costruisci una funzione che, dato un numero di modalità <code>s</code>,
+            ritorni il valore <em>massimo</em> dell'indice di Gini (caso uniforme).
+            Tracciane il grafico per <code>s = 2, 3, …, 30</code>. Cosa noti
+            all'aumentare di <code>s</code>?
+          </p>
+
+<pre data-runnable data-matplotlib="true" data-title="sfida.py" data-lang="python">import matplotlib.pyplot as plt
+
+def gini_max(s):
+    return (s - 1) / s
+
+ss = list(range(2, 31))
+ys = [gini_max(s) for s in ss]
+
+plt.plot(ss, ys, marker='o')
+plt.axhline(1, linestyle='--', color='gray')
+plt.xlabel('s (numero di modalità)')
+plt.ylabel('Gini massimo (s-1)/s')
+plt.title('Gini massimo cresce verso 1 al crescere di s')
+plt.show()
+
+# All'aumentare di s il massimo si avvicina a 1 ma non lo raggiunge mai:
+# ecco perché si normalizza per confrontare distribuzioni con s diversi.
+</pre>
+        </div>
+
+        <p style="margin-top: 24px;">
+          Prossima fermata:
+          <strong><a href="lezione-06.html">L06 — Trasformazione dei dati</a></strong>
+          (traslazione, scala, standardizzazione, log).
+        </p>
+      </section>
+
+      <footer class="footer">
+        L05 · Indici di eterogeneità — Interactive Learning · Superhero Data Science
+      </footer>
+    </main>
+  </div>
+
+  <script src="assets/app.js" defer></script>
+</body>
+</html>

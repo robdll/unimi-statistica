@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L12 · Ripasso — Interactive Learning</title>
+  <meta name="description" content="Ripasso del corso: Poisson, esponenziale, teorema centrale del limite, stima parametrica." />
+  <link rel="stylesheet" href="assets/styles.css" />
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">SD</div>
+        <div>
+          <strong>Lezione 12</strong>
+          <small>Ripasso integrato</small>
+        </div>
+      </div>
+
+      <p style="margin: 0 0 8px;">
+        <a href="index.html" style="font-size:0.85rem;">← Torna all'indice</a>
+      </p>
+
+      <h2>In questa lezione</h2>
+      <ul class="toc">
+        <li><a href="#sec-mappa">Mappa del corso</a></li>
+        <li><a href="#sec-es1">Esercizio 1 · Poisson dalle basi</a></li>
+        <li><a href="#sec-es2">Esercizio 2 · Sorgenti d'acqua</a>
+          <ul class="toc-sub">
+            <li><a href="#es2-1">2.1 Esplorazione</a></li>
+            <li><a href="#es2-2">2.2 Frequenze</a></li>
+            <li><a href="#es2-3">2.3 Modello di Poisson?</a></li>
+            <li><a href="#es2-4">2.4 Stima &amp; non distorsione</a></li>
+          </ul>
+        </li>
+        <li><a href="#sec-es3">Esercizio 3 · Durezza ed esponenziale</a></li>
+        <li><a href="#sec-es4">Esercizio 4 · TCL &amp; profitto atteso</a></li>
+        <li><a href="#sec-checklist">Checklist di fine corso</a></li>
+      </ul>
+    </aside>
+
+    <main class="main">
+
+      <div class="theme-toggle">
+        <button class="btn ghost" type="button">🌙 Tema scuro</button>
+      </div>
+
+      <section class="hero">
+        <h1>L12 · Ripasso integrato</h1>
+        <p>
+          Quest'ultima lezione mette insieme tutti i fili del corso in un'unica
+          esercitazione: dalla descrizione di un dataset alla scelta di un modello
+          probabilistico, dalla stima dei parametri al teorema centrale del limite,
+          fino alla decisione economica basata sui dati. Introduciamo lungo il
+          percorso anche due distribuzioni nuove — la <strong>Poisson</strong> e
+          l'<strong>esponenziale</strong> — che chiudono il quadro insieme alla
+          geometrica vista in L11.
+        </p>
+        <div class="meta">
+          <span>≈ 75–90 minuti</span>
+          <span>10 quiz</span>
+          <span>4 esercizi guidati</span>
+          <span>numpy, pandas, matplotlib, scipy.stats, statsmodels</span>
+        </div>
+        <div class="progress-wrap" title="Progresso quiz">
+          <div class="progress-bar"></div>
+        </div>
+      </section>
+
+      <!-- ============== MAPPA ============== -->
+      <section id="sec-mappa">
+        <h2 class="section-title">Mappa del corso (in una pagina)</h2>
+
+        <table class="table">
+          <tr>
+            <th>Lezione</th><th>Concetto chiave</th><th>Strumento</th>
+          </tr>
+          <tr><td>L01</td><td>Tipi, controllo di flusso, funzioni</td><td>Python di base</td></tr>
+          <tr><td>L02</td><td>Series, DataFrame, indicizzazione</td><td>pandas</td></tr>
+          <tr><td>L03</td><td>Frequenze, value_counts, plot di base</td><td>pandas + matplotlib</td></tr>
+          <tr><td>L04</td><td>Posizione, dispersione, quantili, boxplot</td><td>pandas + matplotlib</td></tr>
+          <tr><td>L05</td><td>Eterogeneità (Gini, entropia), concentrazione</td><td>pandas</td></tr>
+          <tr><td>L06</td><td>Trasformazioni: traslare, scalare, log, standardizzare</td><td>numpy</td></tr>
+          <tr><td>L07</td><td>ANOVA, varianza tra/entro gruppi, η²</td><td>pandas + scipy</td></tr>
+          <tr><td>L08</td><td>Classificatori, matrice di confusione, ROC, AUC</td><td>scikit-learn</td></tr>
+          <tr><td>L09</td><td>Permutazioni, disposizioni, combinazioni</td><td>math + itertools</td></tr>
+          <tr><td>L10</td><td>Naive Bayes, GaussianNB</td><td>scikit-learn</td></tr>
+          <tr><td>L11</td><td>Distribuzione geometrica, assenza di memoria</td><td>numpy + scipy.stats</td></tr>
+          <tr><td><strong>L12</strong></td><td>Poisson, esponenziale, TCL, stima</td><td><strong>tutti insieme</strong></td></tr>
+        </table>
+
+        <div class="callout info">
+          <strong>Tre nuovi modelli in L12.</strong>
+          <ul>
+            <li><strong>Poisson(λ)</strong>: numero di eventi rari in un intervallo;
+              \(\mathrm E(X) = \lambda\), \(\mathrm{Var}(X) = \lambda\).</li>
+            <li><strong>Esponenziale(λ)</strong>: tempo (continuo) tra due eventi
+              poissoniani consecutivi; assenza di memoria.</li>
+            <li><strong>Teorema centrale del limite</strong>: la media campionaria
+              standardizzata tende a una normale, qualunque sia la distribuzione
+              di partenza.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ============== ESERCIZIO 1 ============== -->
+      <section id="sec-es1">
+        <h2 class="section-title">Esercizio 1 · Poisson dalle basi</h2>
+        <p>
+          Sia \(X\) una variabile di Poisson di parametro \(\lambda\) (il numero
+          medio di eventi che accadono in un intervallo prefissato).
+        </p>
+
+        <h3>1.1 Caratteristiche</h3>
+        <ul>
+          <li><strong>Supporto</strong>: \(\mathbb N \cup \{0\} = \{0, 1, 2, \dots\}\).</li>
+          <li><strong>PMF</strong>: \( \displaystyle p_X(k) = \frac{e^{-\lambda} \lambda^k}{k!} \), \(k \in \mathbb N\).</li>
+          <li><strong>Valore atteso</strong>: \(\mathrm E(X) = \lambda\).</li>
+          <li><strong>Varianza</strong>: \(\mathrm{Var}(X) = \lambda\).</li>
+        </ul>
+
+        <div class="callout tip">
+          <strong>Test rapido di Poisson.</strong> In una Poisson media e varianza
+          coincidono: se sui dati osservati \(\mathrm{Var}(X) \approx \mathrm E(X)\),
+          il modello è plausibile; se \(\mathrm{Var}(X) \gg \mathrm E(X)\) c'è
+          <em>overdispersion</em> (es. binomiale negativa).
+        </div>
+
+        <div class="quiz" data-id="q-poisson-1">
+          <h4>In una Poisson, qual è il rapporto \(\mathrm{Var}(X)/\mathrm E(X)\)?</h4>
+          <ul class="quiz-options">
+            <li>Sempre &lt; 1</li>
+            <li data-correct>Sempre = 1</li>
+            <li>Sempre &gt; 1</li>
+            <li>Dipende da \(\lambda\)</li>
+          </ul>
+        </div>
+
+        <h3>1.2 Visualizziamo la PMF (\(\lambda = 5\))</h3>
+
+<pre data-runnable data-matplotlib="true" data-pkgs="numpy" data-title="poisson_pmf.py" data-lang="python">import math, numpy as np
+import matplotlib.pyplot as plt
+
+def p_poisson(k, lam):
+    return lam ** k * math.exp(-lam) / math.factorial(k)
+
+lam = 5
+xs = np.arange(0, 16)
+ys = [p_poisson(int(k), lam) for k in xs]
+
+plt.vlines(xs, 0, ys, color='steelblue')
+plt.plot(xs, ys, 'o', color='steelblue')
+plt.title(f"PMF di Poisson(λ={lam})")
+plt.xlabel("k"); plt.ylabel("P(X = k)")
+plt.tight_layout(); plt.show()
+</pre>
+
+        <h3>1.3 Stesso conto con scipy.stats</h3>
+
+<pre data-runnable data-pkgs="scipy" data-title="poisson_scipy.py" data-lang="python">import scipy.stats as st
+
+lam = 5
+X = st.poisson(lam)
+
+print(f"P(X = 5)   = {X.pmf(5):.4f}")
+print(f"P(X &gt; 6)   = {1 - X.cdf(6):.4f}")
+print(f"x_0.8 (più piccolo k tale che F(k) ≥ 0.8) = {int(X.ppf(0.8))}")
+print(f"verifica:  F(6) = {X.cdf(6):.4f},  F(7) = {X.cdf(7):.4f}")
+</pre>
+
+        <div class="quiz" data-id="q-poisson-2">
+          <h4>Con \(\lambda = 5\), il valore \(x_{0.8}\) (più piccolo k tale che
+            \(F_X(k) \ge 0.8\)) vale…</h4>
+          <ul class="quiz-options">
+            <li>5</li>
+            <li>6</li>
+            <li data-correct>7</li>
+            <li>8</li>
+          </ul>
+          <div class="quiz-explain">
+            \(F(6) \approx 0.762 &lt; 0.8\), \(F(7) \approx 0.867 \ge 0.8\). Quindi \(x_{0.8} = 7\).
+          </div>
+        </div>
+
+        <h3>1.4 Combinazione lineare \(Y = aX - b\)</h3>
+        <p>
+          Per linearità:
+          \(\mathrm E(Y) = a \lambda - b\); \(\mathrm{Var}(Y) = a^2 \lambda\)
+          (la traslazione \(b\) non cambia la varianza).
+        </p>
+
+        <div class="quiz" data-id="q-poisson-3">
+          <h4>Se \(X \sim \mathrm{Poisson}(4)\) e \(Y = 3X - 2\), quanto vale \(\mathrm{Var}(Y)\)?</h4>
+          <ul class="quiz-options">
+            <li>4</li>
+            <li>10</li>
+            <li>34</li>
+            <li data-correct>36</li>
+          </ul>
+          <div class="quiz-explain">
+            \(\mathrm{Var}(aX - b) = a^2 \mathrm{Var}(X) = 9 \cdot 4 = 36\).
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== ESERCIZIO 2 ============== -->
+      <section id="sec-es2">
+        <h2 class="section-title">Esercizio 2 · Sorgenti d'acqua e particelle d'oro</h2>
+        <p>
+          Un'azienda gestisce alcune sorgenti di alta montagna. Un dispositivo filtra
+          5 litri d'acqua per volta e registra: <em>NomeSorgente</em>, <em>Oro</em>
+          (numero di particelle d'oro in 5 L) e <em>DurezzaAcqua</em>. Vogliamo
+          rispondere a una serie di domande puramente statistiche con questi dati.
+        </p>
+
+        <div class="callout warning">
+          <strong>Dataset embedded.</strong> Per girare in Pyodide sostituiamo il
+          file <code>ComposizioneAcqua.csv</code> originale (1650 righe) con un
+          campione sintetico ridotto ma costruito per riprodurre fedelmente le
+          conclusioni qualitative del notebook.
+        </div>
+
+        <h3 id="es2-1">2.1 Caricare e ispezionare il dataset</h3>
+
+<pre data-runnable data-pandas="true" data-title="acqua_load.py" data-lang="python">import pandas as pd, io
+import numpy as np
+
+# Costruiamo un dataset sintetico riproducibile
+rng = np.random.default_rng(0)
+
+# 5 sorgenti, ~50 osservazioni ciascuna (4 simili + sorgente5 diversa)
+def make_block(name, n, lam_oro, mu_durezza, sigma_durezza):
+    return pd.DataFrame({
+        'NomeSorgente': [name] * n,
+        'Oro':          rng.poisson(lam=lam_oro, size=n),
+        'DurezzaAcqua': rng.normal(loc=mu_durezza, scale=sigma_durezza, size=n).round(2),
+    })
+
+acqua = pd.concat([
+    make_block('Sorgente1', 50, 2.1, 14.0, 1.0),
+    make_block('Sorgente2', 50, 2.0, 14.2, 0.9),
+    make_block('Sorgente3', 50, 1.9, 13.9, 1.0),
+    make_block('Sorgente4', 50, 2.0, 14.1, 0.95),
+    make_block('Sorgente5', 50, 0.6, 8.5,  1.0),   # sorgente "diversa"
+], ignore_index=True)
+
+# Iniettiamo un po' di rumore sulla relazione oro/durezza, per coerenza
+acqua['DurezzaAcqua'] = acqua['DurezzaAcqua'] - 0.4 * acqua['Oro']
+
+print("Numero di casi:", len(acqua))
+print("Litri totali  :", len(acqua) * 5)
+print("\nPrime righe:")
+print(acqua.head())
+</pre>
+
+        <h3 id="es2-2">2.2 Sorgenti uniformemente rappresentate?</h3>
+        <p>
+          Per misurare quanto è uniforme la rappresentazione delle sorgenti
+          calcoliamo l'<strong>indice di Gini normalizzato</strong> (vedi L05):
+          vale 1 se le frequenze sono perfettamente uniformi e 0 se una sola
+          modalità ha tutta la massa.
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="gini_sorgenti.py" data-lang="python">import pandas as pd, io
+import numpy as np
+
+# Stesso dataset costruito sopra (ripetiamo per cella indipendente)
+rng = np.random.default_rng(0)
+def make_block(name, n, lam_oro, mu_durezza, sigma_durezza):
+    return pd.DataFrame({
+        'NomeSorgente': [name]*n,
+        'Oro':          rng.poisson(lam=lam_oro, size=n),
+        'DurezzaAcqua': rng.normal(loc=mu_durezza, scale=sigma_durezza, size=n).round(2),
+    })
+acqua = pd.concat([
+    make_block('Sorgente1', 50, 2.1, 14.0, 1.0),
+    make_block('Sorgente2', 50, 2.0, 14.2, 0.9),
+    make_block('Sorgente3', 50, 1.9, 13.9, 1.0),
+    make_block('Sorgente4', 50, 2.0, 14.1, 0.95),
+    make_block('Sorgente5', 50, 0.6, 8.5,  1.0),
+], ignore_index=True)
+
+def gini(series):
+    return 1 - sum(series.value_counts(normalize=True).map(lambda f: f**2))
+
+def normalized_gini(series):
+    s = series.nunique()
+    return s * gini(series) / (s - 1)
+
+print("Sorgenti distinte:", acqua['NomeSorgente'].nunique())
+print(f"Gini normalizzato: {normalized_gini(acqua['NomeSorgente']):.4f}")
+print("\nFrequenze per sorgente:")
+print(acqua['NomeSorgente'].value_counts())
+</pre>
+
+        <h3>2.3 Frequenze delle particelle d'oro</h3>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="freq_oro.py" data-lang="python">import pandas as pd, io
+import numpy as np
+import matplotlib.pyplot as plt
+
+rng = np.random.default_rng(0)
+def make_block(name, n, lam_oro, mu_durezza, sigma_durezza):
+    return pd.DataFrame({
+        'NomeSorgente': [name]*n,
+        'Oro':          rng.poisson(lam=lam_oro, size=n),
+        'DurezzaAcqua': rng.normal(loc=mu_durezza, scale=sigma_durezza, size=n).round(2),
+    })
+acqua = pd.concat([
+    make_block('Sorgente1', 50, 2.1, 14.0, 1.0),
+    make_block('Sorgente2', 50, 2.0, 14.2, 0.9),
+    make_block('Sorgente3', 50, 1.9, 13.9, 1.0),
+    make_block('Sorgente4', 50, 2.0, 14.1, 0.95),
+    make_block('Sorgente5', 50, 0.6, 8.5,  1.0),
+], ignore_index=True)
+
+gold_rel = acqua['Oro'].value_counts(normalize=True, sort=False).sort_index()
+print("Tabella delle frequenze relative:")
+print(gold_rel)
+
+plt.vlines(gold_rel.index, 0, gold_rel.values, color='steelblue')
+plt.plot(gold_rel.index, gold_rel.values, 'o', color='steelblue')
+plt.title("Frequenze relative delle particelle d'oro per 5 L")
+plt.xlabel("Particelle d'oro"); plt.ylabel("Frequenza relativa")
+plt.tight_layout(); plt.show()
+</pre>
+
+        <h3 id="es2-3">2.4 La distribuzione è compatibile con una Poisson?</h3>
+        <p>
+          Test rapido: se i dati seguono una Poisson, media e varianza sono uguali.
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="test_poisson.py" data-lang="python">import pandas as pd, io
+import numpy as np
+
+rng = np.random.default_rng(0)
+def make_block(name, n, lam_oro, mu_durezza, sigma_durezza):
+    return pd.DataFrame({
+        'NomeSorgente': [name]*n,
+        'Oro':          rng.poisson(lam=lam_oro, size=n),
+        'DurezzaAcqua': rng.normal(loc=mu_durezza, scale=sigma_durezza, size=n).round(2),
+    })
+acqua = pd.concat([
+    make_block('Sorgente1', 50, 2.1, 14.0, 1.0),
+    make_block('Sorgente2', 50, 2.0, 14.2, 0.9),
+    make_block('Sorgente3', 50, 1.9, 13.9, 1.0),
+    make_block('Sorgente4', 50, 2.0, 14.1, 0.95),
+    make_block('Sorgente5', 50, 0.6, 8.5,  1.0),
+], ignore_index=True)
+
+mu  = acqua['Oro'].mean()
+var = acqua['Oro'].var()
+print(f"Media campionaria   : {mu:.3f}")
+print(f"Varianza campionaria: {var:.3f}")
+print(f"Rapporto Var/Mean   : {var/mu:.3f}")
+print()
+if abs(var/mu - 1) &lt; 0.2:
+    print("→ media ≈ varianza: il modello di Poisson è plausibile.")
+else:
+    print("→ media ≠ varianza: dati globali NON compatibili con una sola Poisson.")
+print("(La mescolanza di Sorgente5 con λ basso e le altre con λ ≈ 2 produce overdispersion.)")
+</pre>
+
+        <h3 id="es2-4">2.5 Stimatore: media campionaria, non distorto</h3>
+        <p>
+          Lo stimatore usato per \(\lambda\) è la <strong>media campionaria</strong>
+          \( \overline X = \tfrac{1}{n} \sum_{i=1}^n X_i \). È <em>non distorto</em>
+          perché \(\mathrm E(\overline X) = \mathrm E(X) = \lambda\).
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="stima_lambda.py" data-lang="python">import pandas as pd, io
+import numpy as np
+
+rng = np.random.default_rng(0)
+def make_block(name, n, lam_oro, mu_durezza, sigma_durezza):
+    return pd.DataFrame({
+        'NomeSorgente': [name]*n,
+        'Oro':          rng.poisson(lam=lam_oro, size=n),
+        'DurezzaAcqua': rng.normal(loc=mu_durezza, scale=sigma_durezza, size=n).round(2),
+    })
+acqua = pd.concat([
+    make_block('Sorgente1', 50, 2.1, 14.0, 1.0),
+    make_block('Sorgente2', 50, 2.0, 14.2, 0.9),
+    make_block('Sorgente3', 50, 1.9, 13.9, 1.0),
+    make_block('Sorgente4', 50, 2.0, 14.1, 0.95),
+    make_block('Sorgente5', 50, 0.6, 8.5,  1.0),
+], ignore_index=True)
+
+n_missing = acqua['Oro'].isna().sum()
+n         = len(acqua) - n_missing
+lambda_hat = acqua['Oro'].mean()
+
+print(f"Valori mancanti su 'Oro': {n_missing}")
+print(f"Numerosità campione    : {n}")
+print(f"Stima λ (= media camp.): {lambda_hat:.4f}")
+</pre>
+
+        <div class="quiz" data-id="q-stim-1">
+          <h4>La media campionaria è uno stimatore…</h4>
+          <ul class="quiz-options">
+            <li>distorto, ma efficiente</li>
+            <li data-correct>non distorto del valore atteso \(\mathrm E(X)\)</li>
+            <li>distorto del valore atteso</li>
+            <li>non definito quando \(n &lt; 30\)</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ============== ESERCIZIO 3 ============== -->
+      <section id="sec-es3">
+        <h2 class="section-title">Esercizio 3 · Durezza, esponenziale, assenza di memoria</h2>
+
+        <h3>3.1 Istogramma della durezza</h3>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="durezza_hist.py" data-lang="python">import pandas as pd, io
+import numpy as np
+import matplotlib.pyplot as plt
+
+rng = np.random.default_rng(0)
+def make_block(name, n, lam_oro, mu_durezza, sigma_durezza):
+    return pd.DataFrame({
+        'NomeSorgente': [name]*n,
+        'Oro':          rng.poisson(lam=lam_oro, size=n),
+        'DurezzaAcqua': rng.normal(loc=mu_durezza, scale=sigma_durezza, size=n).round(2),
+    })
+acqua = pd.concat([
+    make_block('Sorgente1', 50, 2.1, 14.0, 1.0),
+    make_block('Sorgente2', 50, 2.0, 14.2, 0.9),
+    make_block('Sorgente3', 50, 1.9, 13.9, 1.0),
+    make_block('Sorgente4', 50, 2.0, 14.1, 0.95),
+    make_block('Sorgente5', 50, 0.6, 8.5,  1.0),
+], ignore_index=True)
+
+acqua['DurezzaAcqua'].plot.hist(bins=20, edgecolor='black')
+plt.title("Distribuzione della durezza dell'acqua")
+plt.xlabel("DurezzaAcqua")
+plt.tight_layout(); plt.show()
+print("Forma bimodale → due popolazioni nascoste (sorgente5 vs le altre).")
+</pre>
+
+        <h3>3.2 Q-Q plot rispetto alla normale (con statsmodels)</h3>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-statsmodels="true" data-title="qqplot.py" data-lang="python">import pandas as pd, io
+import numpy as np
+import matplotlib.pyplot as plt
+import statsmodels.api as sm
+
+rng = np.random.default_rng(0)
+def make_block(name, n, lam_oro, mu_durezza, sigma_durezza):
+    return pd.DataFrame({
+        'NomeSorgente': [name]*n,
+        'Oro':          rng.poisson(lam=lam_oro, size=n),
+        'DurezzaAcqua': rng.normal(loc=mu_durezza, scale=sigma_durezza, size=n).round(2),
+    })
+acqua = pd.concat([
+    make_block('Sorgente1', 50, 2.1, 14.0, 1.0),
+    make_block('Sorgente2', 50, 2.0, 14.2, 0.9),
+    make_block('Sorgente3', 50, 1.9, 13.9, 1.0),
+    make_block('Sorgente4', 50, 2.0, 14.1, 0.95),
+    make_block('Sorgente5', 50, 0.6, 8.5,  1.0),
+], ignore_index=True)
+
+sm.qqplot(acqua['DurezzaAcqua'], fit=True, line='45')
+plt.title("Q-Q plot: durezza vs normale standard")
+plt.tight_layout(); plt.show()
+print("Code che si discostano dalla bisettrice → l'ipotesi di normalità non regge.")
+</pre>
+
+        <h3>3.3 Relazione oro / durezza: scatter e correlazione</h3>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="scatter_corr.py" data-lang="python">import pandas as pd, io
+import numpy as np
+import matplotlib.pyplot as plt
+
+rng = np.random.default_rng(0)
+def make_block(name, n, lam_oro, mu_durezza, sigma_durezza):
+    return pd.DataFrame({
+        'NomeSorgente': [name]*n,
+        'Oro':          rng.poisson(lam=lam_oro, size=n),
+        'DurezzaAcqua': rng.normal(loc=mu_durezza, scale=sigma_durezza, size=n).round(2),
+    })
+acqua = pd.concat([
+    make_block('Sorgente1', 50, 2.1, 14.0, 1.0),
+    make_block('Sorgente2', 50, 2.0, 14.2, 0.9),
+    make_block('Sorgente3', 50, 1.9, 13.9, 1.0),
+    make_block('Sorgente4', 50, 2.0, 14.1, 0.95),
+    make_block('Sorgente5', 50, 0.6, 8.5,  1.0),
+], ignore_index=True)
+# (rumore già iniettato a parità di seme, vedi 2.1)
+acqua['DurezzaAcqua'] = acqua['DurezzaAcqua'] - 0.4 * acqua['Oro']
+
+acqua.plot.scatter('Oro', 'DurezzaAcqua', alpha=0.5)
+plt.title("Oro vs DurezzaAcqua")
+plt.tight_layout(); plt.show()
+
+r = acqua['Oro'].corr(acqua['DurezzaAcqua'])
+print(f"Coefficiente di correlazione lineare: {r:.4f}")
+print("Negativo: più oro → minore durezza.")
+</pre>
+
+        <h3>3.4 Dividiamo per sorgente e stimiamo λ separatamente</h3>
+
+<pre data-runnable data-pandas="true" data-title="lambda_per_sorgente.py" data-lang="python">import pandas as pd, io
+import numpy as np
+
+rng = np.random.default_rng(0)
+def make_block(name, n, lam_oro, mu_durezza, sigma_durezza):
+    return pd.DataFrame({
+        'NomeSorgente': [name]*n,
+        'Oro':          rng.poisson(lam=lam_oro, size=n),
+        'DurezzaAcqua': rng.normal(loc=mu_durezza, scale=sigma_durezza, size=n).round(2),
+    })
+acqua = pd.concat([
+    make_block('Sorgente1', 50, 2.1, 14.0, 1.0),
+    make_block('Sorgente2', 50, 2.0, 14.2, 0.9),
+    make_block('Sorgente3', 50, 1.9, 13.9, 1.0),
+    make_block('Sorgente4', 50, 2.0, 14.1, 0.95),
+    make_block('Sorgente5', 50, 0.6, 8.5,  1.0),
+], ignore_index=True)
+
+print("Media (e varianza) di Oro per sorgente:")
+print(acqua.groupby('NomeSorgente')['Oro'].agg(['mean', 'var', 'count']))
+
+sorgente_5     = acqua[acqua['NomeSorgente'] == 'Sorgente5']
+altre_sorgenti = acqua[acqua['NomeSorgente'] != 'Sorgente5']
+
+num_part_5    = sorgente_5['Oro'].mean()
+num_part_alt  = altre_sorgenti['Oro'].mean()
+
+print(f"\nλ stimato Sorgente5 : {num_part_5:.4f}")
+print(f"λ stimato altre     : {num_part_alt:.4f}")
+</pre>
+
+        <h3>3.5 Dalla Poisson all'esponenziale</h3>
+        <p>
+          Se il numero di particelle in 5 L è \(X \sim \mathrm{Poisson}(\lambda)\),
+          il <em>numero di litri tra una particella e la successiva</em> è una
+          variabile <strong>esponenziale</strong> di parametro \( \mu = \lambda / 5 \)
+          (intensità per litro). La sua densità e CDF sono:
+        </p>
+        <p>\[ f_T(t) = \mu e^{-\mu t}, \quad t \ge 0; \qquad F_T(t) = 1 - e^{-\mu t}. \]</p>
+        <p>
+          Anche l'esponenziale ha la proprietà di <strong>assenza di memoria</strong>
+          (versione continua):
+          \(\mathrm P(T &gt; s + t \mid T &gt; s) = \mathrm P(T &gt; t)\).
+        </p>
+
+<pre data-runnable data-pandas="true" data-pkgs="scipy" data-title="exp_proba.py" data-lang="python">import pandas as pd, io
+import numpy as np
+import scipy.stats as st
+
+rng = np.random.default_rng(0)
+def make_block(name, n, lam_oro, mu_durezza, sigma_durezza):
+    return pd.DataFrame({
+        'NomeSorgente': [name]*n,
+        'Oro':          rng.poisson(lam=lam_oro, size=n),
+        'DurezzaAcqua': rng.normal(loc=mu_durezza, scale=sigma_durezza, size=n).round(2),
+    })
+acqua = pd.concat([
+    make_block('Sorgente1', 50, 2.1, 14.0, 1.0),
+    make_block('Sorgente2', 50, 2.0, 14.2, 0.9),
+    make_block('Sorgente3', 50, 1.9, 13.9, 1.0),
+    make_block('Sorgente4', 50, 2.0, 14.1, 0.95),
+    make_block('Sorgente5', 50, 0.6, 8.5,  1.0),
+], ignore_index=True)
+
+sorgente_5 = acqua[acqua['NomeSorgente'] == 'Sorgente5']
+mu_5 = sorgente_5['Oro'].mean() / 5    # particelle per litro
+
+print(f"μ stimato (particelle/L) per sorgente5: {mu_5:.4f}")
+T = st.expon(scale=1/mu_5)             # scipy: scale = 1/μ
+
+# Probabilità di non trovare oro nei prossimi 10 L
+p10 = 1 - T.cdf(10)
+print(f"\nP(T &gt; 10 L) = {p10:.4f}")
+
+# Assenza di memoria: P(T &gt; 5+10 | T &gt; 5) = P(T &gt; 10)
+p_cond = (1 - T.cdf(15)) / (1 - T.cdf(5))
+print(f"P(T &gt; 15 | T &gt; 5) = {p_cond:.4f}  (uguale a P(T &gt; 10), per assenza di memoria)")
+</pre>
+
+        <h3>3.6 Grafico della CDF di Y</h3>
+
+<pre data-runnable data-pandas="true" data-pkgs="scipy" data-matplotlib="true" data-title="cdf_exp.py" data-lang="python">import pandas as pd, io
+import numpy as np
+import scipy.stats as st
+import matplotlib.pyplot as plt
+
+rng = np.random.default_rng(0)
+def make_block(name, n, lam_oro, mu_durezza, sigma_durezza):
+    return pd.DataFrame({
+        'NomeSorgente': [name]*n,
+        'Oro':          rng.poisson(lam=lam_oro, size=n),
+        'DurezzaAcqua': rng.normal(loc=mu_durezza, scale=sigma_durezza, size=n).round(2),
+    })
+acqua = pd.concat([
+    make_block('Sorgente1', 50, 2.1, 14.0, 1.0),
+    make_block('Sorgente2', 50, 2.0, 14.2, 0.9),
+    make_block('Sorgente3', 50, 1.9, 13.9, 1.0),
+    make_block('Sorgente4', 50, 2.0, 14.1, 0.95),
+    make_block('Sorgente5', 50, 0.6, 8.5,  1.0),
+], ignore_index=True)
+
+mu_5 = acqua[acqua['NomeSorgente']=='Sorgente5']['Oro'].mean() / 5
+mu_alt = acqua[acqua['NomeSorgente']!='Sorgente5']['Oro'].mean() / 5
+
+T_5   = st.expon(scale=1/mu_5)
+T_alt = st.expon(scale=1/mu_alt)
+
+t = np.linspace(0, 30, 400)
+plt.plot(t, T_5.cdf(t),   label=f"Sorgente5 (μ={mu_5:.3f}/L)")
+plt.plot(t, T_alt.cdf(t), label=f"Altre sorgenti (μ={mu_alt:.3f}/L)")
+plt.title("CDF della distanza (in litri) tra particelle d'oro consecutive")
+plt.xlabel("litri analizzati"); plt.ylabel("F(t)")
+plt.legend(); plt.tight_layout(); plt.show()
+</pre>
+
+        <div class="quiz" data-id="q-exp-1">
+          <h4>Se eventi accadono come Poisson(λ) per intervallo di durata 5,
+            l'intervallo tra eventi consecutivi è…</h4>
+          <ul class="quiz-options">
+            <li>Geometrico, parametro λ</li>
+            <li data-correct>Esponenziale, parametro μ = λ/5</li>
+            <li>Normale di media 5/λ</li>
+            <li>Uniforme su [0, 5]</li>
+          </ul>
+        </div>
+
+        <div class="quiz" data-id="q-exp-2">
+          <h4>Quale di queste distribuzioni <strong>non</strong> ha l'assenza di memoria?</h4>
+          <ul class="quiz-options">
+            <li>Geometrica</li>
+            <li>Esponenziale</li>
+            <li data-correct>Poisson</li>
+            <li>Sia geometrica che esponenziale ce l'hanno</li>
+          </ul>
+          <div class="quiz-explain">
+            La Poisson ha memoria: il numero di eventi in un intervallo dipende
+            dall'ampiezza, non «si dimentica» del passato.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== ESERCIZIO 4 ============== -->
+      <section id="sec-es4">
+        <h2 class="section-title">Esercizio 4 · TCL e profitto atteso</h2>
+
+        <h3>4.1 Errore di stima e teorema centrale del limite</h3>
+        <p>
+          Vogliamo sapere con quale probabilità la stima campionaria \(\overline X\)
+          si discosta da \(\lambda\) per meno di \(\epsilon = 0.1\). Per il
+          <strong>TCL</strong>, \( \overline X \) è approssimativamente normale di
+          media \(\lambda\) e deviazione standard \(\sigma_X / \sqrt n\). Quindi:
+        </p>
+        <p>\[ \mathrm P(|\overline X - \lambda| &lt; \epsilon)
+              \approx 2 \Phi\!\left(\frac{\epsilon \sqrt n}{\sigma_X}\right) - 1. \]</p>
+
+<pre data-runnable data-pandas="true" data-pkgs="scipy" data-title="tcl_eps.py" data-lang="python">import pandas as pd, io
+import numpy as np
+import scipy.stats as st
+
+rng = np.random.default_rng(0)
+def make_block(name, n, lam_oro, mu_durezza, sigma_durezza):
+    return pd.DataFrame({
+        'NomeSorgente': [name]*n,
+        'Oro':          rng.poisson(lam=lam_oro, size=n),
+        'DurezzaAcqua': rng.normal(loc=mu_durezza, scale=sigma_durezza, size=n).round(2),
+    })
+acqua = pd.concat([
+    make_block('Sorgente1', 50, 2.1, 14.0, 1.0),
+    make_block('Sorgente2', 50, 2.0, 14.2, 0.9),
+    make_block('Sorgente3', 50, 1.9, 13.9, 1.0),
+    make_block('Sorgente4', 50, 2.0, 14.1, 0.95),
+    make_block('Sorgente5', 50, 0.6, 8.5,  1.0),
+], ignore_index=True)
+
+sorgente_5 = acqua[acqua['NomeSorgente'] == 'Sorgente5']
+sigma_x    = sorgente_5['Oro'].std()
+n          = len(sorgente_5)
+eps        = 0.1
+
+Z   = st.norm()
+prob = 2 * Z.cdf(eps * n**0.5 / sigma_x) - 1
+print(f"σ_X stimata     : {sigma_x:.4f}")
+print(f"n               : {n}")
+print(f"P(|X̄ - λ| &lt; {eps}) ≈ {prob:.4f}")
+</pre>
+
+        <h3>4.2 Quanti litri in più per arrivare al 90%?</h3>
+        <p>
+          Vogliamo \(\mathrm P(|\overline X - \lambda| &lt; \epsilon) \ge 0.9\),
+          ossia \(\Phi(\epsilon \sqrt n / \sigma_X) \ge 0.95\). Risolvendo per \(n\):
+        </p>
+        <p>\[ n \ge \left( \frac{\sigma_X}{\epsilon} \, \Phi^{-1}(0.95) \right)^2. \]</p>
+
+<pre data-runnable data-pandas="true" data-pkgs="scipy" data-title="tcl_n.py" data-lang="python">import pandas as pd, io
+import math
+import numpy as np
+import scipy.stats as st
+
+rng = np.random.default_rng(0)
+def make_block(name, n, lam_oro, mu_durezza, sigma_durezza):
+    return pd.DataFrame({
+        'NomeSorgente': [name]*n,
+        'Oro':          rng.poisson(lam=lam_oro, size=n),
+        'DurezzaAcqua': rng.normal(loc=mu_durezza, scale=sigma_durezza, size=n).round(2),
+    })
+acqua = pd.concat([
+    make_block('Sorgente1', 50, 2.1, 14.0, 1.0),
+    make_block('Sorgente2', 50, 2.0, 14.2, 0.9),
+    make_block('Sorgente3', 50, 1.9, 13.9, 1.0),
+    make_block('Sorgente4', 50, 2.0, 14.1, 0.95),
+    make_block('Sorgente5', 50, 0.6, 8.5,  1.0),
+], ignore_index=True)
+
+sorgente_5 = acqua[acqua['NomeSorgente'] == 'Sorgente5']
+sigma_x = sorgente_5['Oro'].std()
+n_attuali = len(sorgente_5)
+eps = 0.1
+
+Z = st.norm()
+n_0 = math.ceil((sigma_x / eps * Z.ppf(0.95))**2)
+
+print(f"n minimo richiesto : {n_0}")
+print(f"Già osservati      : {n_attuali}")
+print(f"Mancanti           : {n_0 - n_attuali}")
+print(f"Equivalenti a {(n_0 - n_attuali) * 5} L di acqua")
+</pre>
+
+        <h3>4.3 Profitto atteso e varianza</h3>
+        <p>
+          1000 L di acqua = 200 osservazioni da 5 L, ognuna \( \sim \mathrm{Poisson}(\lambda) \).
+          Il numero totale di particelle d'oro è \( N = \sum_{i=1}^{200} X_i \sim \mathrm{Poisson}(200 \lambda) \).
+          Se ogni particella vale 1.5 € e il dispositivo costa 1000 €:
+        </p>
+        <p>\[ G = 1.5 N - 1000, \quad \mathrm E(G) = 1.5 \cdot 200\lambda - 1000 = 100(3\lambda - 10), \quad \mathrm{Var}(G) = 1.5^2 \cdot 200\lambda. \]</p>
+
+<pre data-runnable data-pandas="true" data-title="profit.py" data-lang="python">import pandas as pd, io
+import numpy as np
+
+rng = np.random.default_rng(0)
+def make_block(name, n, lam_oro, mu_durezza, sigma_durezza):
+    return pd.DataFrame({
+        'NomeSorgente': [name]*n,
+        'Oro':          rng.poisson(lam=lam_oro, size=n),
+        'DurezzaAcqua': rng.normal(loc=mu_durezza, scale=sigma_durezza, size=n).round(2),
+    })
+acqua = pd.concat([
+    make_block('Sorgente1', 50, 2.1, 14.0, 1.0),
+    make_block('Sorgente2', 50, 2.0, 14.2, 0.9),
+    make_block('Sorgente3', 50, 1.9, 13.9, 1.0),
+    make_block('Sorgente4', 50, 2.0, 14.1, 0.95),
+    make_block('Sorgente5', 50, 0.6, 8.5,  1.0),
+], ignore_index=True)
+
+lam_5 = acqua[acqua['NomeSorgente']=='Sorgente5']['Oro'].mean()
+
+EG  = 100 * (3 * lam_5 - 10)
+VarG = 1.5**2 * 200 * lam_5
+print(f"λ stimato Sorgente5 : {lam_5:.4f}")
+print(f"E(G)   = {EG:.2f} €")
+print(f"Var(G) = {VarG:.2f}")
+print(f"σ(G)   = {VarG**0.5:.2f} €")
+
+if EG &gt; 0:
+    print("\n→ in media, attività potenzialmente in attivo (ma con grande incertezza).")
+else:
+    print("\n→ in media, attività in perdita: l'oro è troppo poco per ripagare il dispositivo.")
+</pre>
+
+        <div class="quiz" data-id="q-tcl-1">
+          <h4>Per dimezzare l'errore standard di \(\overline X\), dobbiamo…</h4>
+          <ul class="quiz-options">
+            <li>Raddoppiare \(n\)</li>
+            <li data-correct>Quadruplicare \(n\) (errore scala come \(1/\sqrt n\))</li>
+            <li>Raddoppiare \(\sigma\)</li>
+            <li>Niente: dipende dal modello</li>
+          </ul>
+        </div>
+
+        <div class="quiz" data-id="q-tcl-2">
+          <h4>Sommando 200 variabili IID \(\mathrm{Poisson}(\lambda)\) si ottiene…</h4>
+          <ul class="quiz-options">
+            <li>Una geometrica</li>
+            <li>Una normale (esattamente)</li>
+            <li data-correct>Una \(\mathrm{Poisson}(200\lambda)\)</li>
+            <li>Un'altra Poisson di parametro \(\lambda/200\)</li>
+          </ul>
+          <div class="quiz-explain">
+            La somma di Poisson indipendenti è ancora una Poisson, con parametro
+            uguale alla somma dei parametri. Per il TCL, però, è anche
+            <em>approssimativamente</em> normale.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== CHECKLIST ============== -->
+      <section id="sec-checklist">
+        <h2 class="section-title">Checklist di fine corso</h2>
+        <p>Cose da saper fare alla fine del percorso:</p>
+        <ul>
+          <li>Caricare un dataset, ispezionarlo, gestire i valori mancanti.</li>
+          <li>Calcolare frequenze assolute, relative, cumulate e visualizzarle.</li>
+          <li>Calcolare indici di posizione (media, mediana, quantili) e di
+            dispersione (varianza, std, IQR) e leggere un boxplot.</li>
+          <li>Misurare eterogeneità (Gini, entropia) e concentrazione
+            (curva di Lorenz).</li>
+          <li>Effettuare trasformazioni: traslare, scalare, standardizzare,
+            applicare \(\log\).</li>
+          <li>Analizzare la varianza tra/entro gruppi (\(\eta^2\)).</li>
+          <li>Costruire un classificatore con scikit-learn, calcolare matrice di
+            confusione, sensibilità, specificità, ROC, AUC.</li>
+          <li>Contare con permutazioni, disposizioni, combinazioni.</li>
+          <li>Applicare il teorema di Bayes e usare un classificatore Naive Bayes.</li>
+          <li>Riconoscere la <strong>geometrica</strong> (numero di tentativi),
+            la <strong>Poisson</strong> (numero di eventi rari) e l'<strong>esponenziale</strong> (tempo tra eventi).</li>
+          <li>Stimare un parametro con la media campionaria e capire perché è non distorta.</li>
+          <li>Usare il <strong>TCL</strong> per costruire intervalli di confidenza
+            o calcolare la dimensione campionaria necessaria.</li>
+        </ul>
+
+        <div class="callout tip">
+          <strong>Una sola domanda da farsi sempre.</strong>
+          «Se ripetessi tutto questo da capo, quanto cambierebbe il mio risultato?»
+          Tutta la statistica è il tentativo di rispondere in modo quantitativo a
+          questa domanda.
+        </div>
+
+        <p style="margin-top: 24px;">
+          ← <a href="index.html">Torna all'indice generale</a>
+          &nbsp;·&nbsp;
+          <a href="lezione-11.html">Indietro: L11 — Distribuzione geometrica</a>
+        </p>
+      </section>
+
+      <footer class="footer">
+        L12 · Ripasso integrato — Interactive Learning · Superhero Data Science
+      </footer>
+    </main>
+  </div>
+
+  <script src="assets/app.js" defer></script>
+</body>
+</html>

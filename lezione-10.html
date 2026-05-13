@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L10 · Naive Bayes — Interactive Learning</title>
+  <meta name="description" content="Teorema di Bayes, classificatori naive e GaussianNB con scikit-learn." />
+  <link rel="stylesheet" href="assets/styles.css" />
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">SD</div>
+        <div>
+          <strong>Lezione 10</strong>
+          <small>Classificatori naive Bayes</small>
+        </div>
+      </div>
+
+      <p style="margin: 0 0 8px;">
+        <a href="index.html" style="font-size:0.85rem;">← Torna all'indice</a>
+      </p>
+
+      <h2>In questa lezione</h2>
+      <ul class="toc">
+        <li><a href="#sec-bayes">1. Richiamo: teorema di Bayes</a></li>
+        <li><a href="#sec-uno">2. Classificare con una sola feature</a></li>
+        <li><a href="#sec-naive">3. L'ipotesi «naive»</a></li>
+        <li><a href="#sec-multi">4. Più di due classi</a></li>
+        <li><a href="#sec-sklearn">5. GaussianNB con sklearn</a></li>
+        <li><a href="#sec-confusion">6. Matrice di confusione &amp; accuracy</a></li>
+        <li><a href="#sec-finale">7. Esercizi finali</a></li>
+      </ul>
+    </aside>
+
+    <main class="main">
+
+      <div class="theme-toggle">
+        <button class="btn ghost" type="button">🌙 Tema scuro</button>
+      </div>
+
+      <section class="hero">
+        <h1>L10 · Classificatori naive Bayes</h1>
+        <p>
+          Dato che un supereroe ha gli occhi neri, è più probabile che sia Marvel o
+          DC? E se in più ha anche i capelli neri? Il <strong>teorema di Bayes</strong>
+          fornisce la cornice probabilistica per rispondere; l'ipotesi
+          «<em>naive</em>» (di indipendenza fra le feature) la trasforma in un
+          algoritmo di classificazione veloce, semplice e sorprendentemente efficace.
+        </p>
+        <div class="meta">
+          <span>≈ 45–60 minuti</span>
+          <span>8 quiz</span>
+          <span>4 esercizi</span>
+          <span>numpy, pandas, scikit-learn</span>
+        </div>
+        <div class="progress-wrap" title="Progresso quiz">
+          <div class="progress-bar"></div>
+        </div>
+      </section>
+
+      <!-- ============== 1. BAYES ============== -->
+      <section id="sec-bayes">
+        <h2 class="section-title">1. Richiamo: teorema di Bayes</h2>
+        <p>
+          Per ogni coppia di eventi \(A, B\) con \(\mathrm P(B) &gt; 0\):
+        </p>
+        <p>\[ \mathrm P(A \mid B) = \frac{\mathrm P(B \mid A)\, \mathrm P(A)}{\mathrm P(B)} \]</p>
+        <ul>
+          <li>\(\mathrm P(A)\) — <strong>prior</strong>: ciò che credo prima di osservare;</li>
+          <li>\(\mathrm P(B \mid A)\) — <strong>verosimiglianza</strong>: quanto è plausibile osservare \(B\) se \(A\) è vero;</li>
+          <li>\(\mathrm P(A \mid B)\) — <strong>posterior</strong>: ciò che credo dopo aver osservato \(B\);</li>
+          <li>\(\mathrm P(B)\) — <strong>evidenza</strong>: serve a normalizzare.</li>
+        </ul>
+
+        <div class="callout info">
+          <strong>Intuizione.</strong> Bayes ribalta il condizionamento. Se so come
+          <em>generare</em> i dati a partire dalla causa (\(\mathrm P(B \mid A)\)),
+          posso <em>inferire</em> la causa dai dati (\(\mathrm P(A \mid B)\)),
+          purché conosca la frequenza a priori della causa stessa.
+        </div>
+
+        <div class="quiz" data-id="q-bayes-1">
+          <h4>Quale ruolo ha \(\mathrm P(A)\) nel teorema di Bayes?</h4>
+          <ul class="quiz-options">
+            <li>Verosimiglianza dell'osservazione</li>
+            <li data-correct>Prior: probabilità della causa prima di osservare</li>
+            <li>Costante di normalizzazione</li>
+            <li>Probabilità che il classificatore sbagli</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ============== 2. UNA SOLA FEATURE ============== -->
+      <section id="sec-uno">
+        <h2 class="section-title">2. Classificare con una sola feature</h2>
+        <p>
+          Indichiamo con
+          <strong>\(M\)</strong> = «un supereroe è Marvel» e
+          <strong>\(N\)</strong> = «un supereroe ha gli occhi neri».
+          Vorremmo stimare \(\mathrm P(M \mid N)\) usando le frequenze osservate
+          nel dataset.
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="bayes_una_feature.py" data-lang="python">HEROES_CSV = """\
+Name;Publisher;Eye color;Hair color
+Iron Man;Marvel Comics;Blue;Black
+Hulk;Marvel Comics;Green;Green
+Spider-Man;Marvel Comics;Hazel;Brown
+Wolverine;Marvel Comics;Blue;Black
+Storm;Marvel Comics;Brown;White
+Thor;Marvel Comics;Blue;Blond
+Black Widow;Marvel Comics;Green;Auburn
+Captain America;Marvel Comics;Blue;Blond
+Doctor Strange;Marvel Comics;Grey;Black
+Magneto;Marvel Comics;Grey;Black
+Venom;Marvel Comics;Blue;Black
+Daredevil;Marvel Comics;Blue;Auburn
+Black Panther;Marvel Comics;Brown;Black
+Punisher;Marvel Comics;Blue;Brown
+Deadpool;Marvel Comics;Brown;Brown
+Batman;DC Comics;Blue;Black
+Superman;DC Comics;Blue;Black
+Wonder Woman;DC Comics;Blue;Black
+Joker;DC Comics;Green;Green
+Aquaman;DC Comics;Blue;Blond
+Catwoman;DC Comics;Green;Black
+Flash;DC Comics;Green;Auburn
+Cyborg;DC Comics;Brown;Black
+Penguin;DC Comics;Blue;Black
+Riddler;DC Comics;Blue;Auburn
+"""
+import pandas as pd, io
+
+heroes = pd.read_csv(io.StringIO(HEROES_CSV), sep=';', index_col='Name')
+
+# Eventi
+marvel = heroes['Publisher'] == 'Marvel Comics'
+black_eyes = heroes['Eye color'] == 'Black'
+black_eyes_or_dark = heroes['Eye color'].isin(['Brown', 'Grey'])  # nero non presente: usiamo "scuri"
+
+# Per fedeltà al notebook chiamiamo "occhi neri" tutto ciò che non è Blue/Green
+black_eyes = ~heroes['Eye color'].isin(['Blue', 'Green'])
+
+p_marvel = marvel.mean()
+p_black  = black_eyes.mean()
+p_black_given_marvel = (black_eyes &amp; marvel).sum() / marvel.sum()
+
+print(f"P(M)            = {p_marvel:.3f}")
+print(f"P(N)            = {p_black:.3f}")
+print(f"P(N | M)        = {p_black_given_marvel:.3f}")
+
+p_marvel_given_black = p_black_given_marvel * p_marvel / p_black
+print(f"\nP(M | N) = P(N|M) P(M) / P(N) = {p_marvel_given_black:.3f}")
+</pre>
+
+        <div class="callout tip">
+          <strong>Nota sul dataset.</strong> Per essere eseguibile in Pyodide, qui
+          usiamo un dataset ridotto. Le frequenze non sono identiche a quelle del
+          notebook originale, ma il <em>procedimento</em> è esattamente lo stesso.
+        </div>
+      </section>
+
+      <!-- ============== 3. NAIVE ============== -->
+      <section id="sec-naive">
+        <h2 class="section-title">3. L'ipotesi «naive»</h2>
+        <p>
+          Se aggiungiamo una seconda feature \(C\) («colore dei capelli»), il teorema
+          di Bayes diventa:
+        </p>
+        <p>\[ \mathrm P(M \mid O, C) = \frac{\mathrm P(O, C \mid M)\, \mathrm P(M)}{\mathrm P(O, C)} \]</p>
+        <p>
+          La verosimiglianza congiunta \(\mathrm P(O, C \mid M)\) è difficile da
+          stimare se le combinazioni sono tante. L'ipotesi <em>naive</em> assume
+          <strong>indipendenza condizionata</strong>:
+        </p>
+        <p>\[ \mathrm P(O, C \mid M) \approx \mathrm P(O \mid M)\, \mathrm P(C \mid M) \]</p>
+        <p>
+          Si stimano così solo \(m + n\) probabilità (somma) anziché \(m \cdot n\)
+          (prodotto). L'ipotesi è quasi sempre falsa, ma in pratica funziona: di qui
+          il nome «ingenuo» (<em>naive</em>).
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="bayes_due_feature.py" data-lang="python">HEROES_CSV = """\
+Name;Publisher;Eye color;Hair color
+Iron Man;Marvel Comics;Blue;Black
+Hulk;Marvel Comics;Green;Green
+Spider-Man;Marvel Comics;Hazel;Brown
+Wolverine;Marvel Comics;Blue;Black
+Storm;Marvel Comics;Brown;White
+Thor;Marvel Comics;Blue;Blond
+Black Widow;Marvel Comics;Green;Auburn
+Captain America;Marvel Comics;Blue;Blond
+Doctor Strange;Marvel Comics;Grey;Black
+Magneto;Marvel Comics;Grey;Black
+Venom;Marvel Comics;Blue;Black
+Daredevil;Marvel Comics;Blue;Auburn
+Black Panther;Marvel Comics;Brown;Black
+Punisher;Marvel Comics;Blue;Brown
+Deadpool;Marvel Comics;Brown;Brown
+Batman;DC Comics;Blue;Black
+Superman;DC Comics;Blue;Black
+Wonder Woman;DC Comics;Blue;Black
+Joker;DC Comics;Green;Green
+Aquaman;DC Comics;Blue;Blond
+Catwoman;DC Comics;Green;Black
+Flash;DC Comics;Green;Auburn
+Cyborg;DC Comics;Brown;Black
+Penguin;DC Comics;Blue;Black
+Riddler;DC Comics;Blue;Auburn
+"""
+import pandas as pd, io
+
+heroes = pd.read_csv(io.StringIO(HEROES_CSV), sep=';', index_col='Name')
+
+marvel = heroes['Publisher'] == 'Marvel Comics'
+brown_eyes = heroes['Eye color'] == 'Brown'
+black_hair = heroes['Hair color'] == 'Black'
+
+p_marvel = marvel.mean()
+p_brown_given_marvel = (brown_eyes &amp; marvel).sum() / marvel.sum()
+p_blackhair_given_marvel = (black_hair &amp; marvel).sum() / marvel.sum()
+p_brown_and_blackhair = (brown_eyes &amp; black_hair).mean()
+
+post = p_brown_given_marvel * p_blackhair_given_marvel * p_marvel / p_brown_and_blackhair
+print(f"P(M | occhi=marrone, capelli=neri) ≈ {post:.3f}")
+</pre>
+
+        <div class="quiz" data-id="q-naive-1">
+          <h4>L'ipotesi naive afferma che…</h4>
+          <ul class="quiz-options">
+            <li>Le classi hanno tutte la stessa frequenza a priori.</li>
+            <li data-correct>Le feature sono indipendenti dato il valore della classe.</li>
+            <li>Le feature sono numeriche e gaussiane.</li>
+            <li>Il classificatore non sbaglia mai sui dati di training.</li>
+          </ul>
+          <div class="quiz-explain">
+            La semplificazione cardine è l'<em>indipendenza condizionata</em>:
+            \(\mathrm P(X_1, X_2 \mid Y) \approx \mathrm P(X_1 \mid Y)\, \mathrm P(X_2 \mid Y)\).
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 4. MULTICLASS ============== -->
+      <section id="sec-multi">
+        <h2 class="section-title">4. Più di due classi: regola \(\arg\max\)</h2>
+        <p>
+          Con \(m\) classi \(y_1, \dots, y_m\) e \(n\) feature \(X_1, \dots, X_n\),
+          l'osservazione viene assegnata alla classe
+        </p>
+        <p>\[ k^* \;=\; \arg\max_k\;\; \mathrm P(Y = y_k) \prod_{i=1}^{n} \mathrm P(X_i = x_i \mid Y = y_k) \]</p>
+        <p>
+          Il denominatore \(\mathrm P(X_1=x_1, \dots, X_n=x_n)\) è uguale per tutte
+          le classi e quindi può essere ignorato nel confronto.
+        </p>
+
+        <div class="callout warning">
+          <strong>Attenzione ai prodotti di numeri piccoli.</strong> Moltiplicare
+          molte probabilità può portare a underflow numerico. In pratica si lavora
+          in scala logaritmica:
+          \( \log \mathrm P(Y = y_k) + \sum_i \log \mathrm P(X_i \mid Y = y_k) \).
+        </div>
+
+        <div class="quiz" data-id="q-multi-1">
+          <h4>Perché il denominatore \(\mathrm P(X_1, \dots, X_n)\) si può ignorare?</h4>
+          <ul class="quiz-options">
+            <li>Perché vale sempre 1.</li>
+            <li>Perché è sempre uguale al prior.</li>
+            <li data-correct>Perché non dipende da \(k\): ininfluente per il \(\arg\max\).</li>
+            <li>Perché lo richiede l'ipotesi naive.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ============== 5. SKLEARN ============== -->
+      <section id="sec-sklearn">
+        <h2 class="section-title">5. GaussianNB con scikit-learn</h2>
+        <p>
+          La libreria <code>sklearn.naive_bayes</code> implementa varie versioni del
+          classificatore in base a come si stima \(\mathrm P(X_i \mid Y)\):
+        </p>
+        <ul>
+          <li><code>GaussianNB</code> — feature continue, gaussiane;</li>
+          <li><code>MultinomialNB</code> — feature di conteggio (es. parole);</li>
+          <li><code>BernoulliNB</code> — feature binarie (presenza/assenza);</li>
+          <li><code>CategoricalNB</code> — feature categoriche.</li>
+        </ul>
+
+        <p>
+          Tutte le classi seguono la stessa API:
+          <code>model.fit(X, y)</code> e <code>model.predict(X)</code>.
+        </p>
+
+<pre data-runnable data-pandas="true" data-sklearn="true" data-title="gaussian_nb.py" data-lang="python">HEROES_CSV = """\
+Name;Publisher;Height;Weight;Strength;Intelligence;Hair_code;Eye_code
+Iron Man;Marvel Comics;198;102;85;3;0;1
+Hulk;Marvel Comics;244;630;100;1;3;2
+Spider-Man;Marvel Comics;178;74;55;3;1;4
+Wolverine;Marvel Comics;160;88;75;2;0;1
+Storm;Marvel Comics;180;57;30;2;6;5
+Thor;Marvel Comics;198;292;100;2;2;1
+Black Widow;Marvel Comics;170;59;13;2;5;2
+Captain America;Marvel Comics;188;108;19;2;2;1
+Doctor Strange;Marvel Comics;188;83;10;3;0;3
+Magneto;Marvel Comics;188;86;55;3;0;3
+Venom;Marvel Comics;190;163;85;2;0;1
+Daredevil;Marvel Comics;185;90;15;2;5;1
+Black Panther;Marvel Comics;183;90;30;3;0;5
+Punisher;Marvel Comics;188;95;15;2;1;1
+Deadpool;Marvel Comics;188;95;30;1;1;5
+Batman;DC Comics;188;95;26;3;0;1
+Superman;DC Comics;191;101;100;2;0;1
+Wonder Woman;DC Comics;183;75;100;2;0;1
+Joker;DC Comics;196;86;10;3;3;2
+Aquaman;DC Comics;185;100;85;1;2;1
+Catwoman;DC Comics;175;55;14;2;0;2
+Flash;DC Comics;183;80;26;1;5;2
+Cyborg;DC Comics;198;172;80;1;0;5
+Penguin;DC Comics;160;79;9;2;0;1
+Riddler;DC Comics;185;84;8;3;5;1
+"""
+import pandas as pd, io
+from sklearn.naive_bayes import GaussianNB
+
+heroes = pd.read_csv(io.StringIO(HEROES_CSV), sep=';', index_col='Name')
+
+# y = 1 se Marvel, 0 altrimenti
+y = (heroes['Publisher'] == 'Marvel Comics').astype(int)
+X = heroes.drop(columns=['Publisher'])
+
+model = GaussianNB()
+model.fit(X, y)
+
+pred = model.predict(X)
+print("Etichette reali     :", y.values.tolist())
+print("Etichette predette  :", pred.tolist())
+print(f"\nAccuracy training: {(pred == y).mean():.3f}")
+</pre>
+
+        <div class="callout info">
+          <strong>Train/test split.</strong> Valutare un classificatore sui suoi
+          stessi dati di addestramento è ottimistico: misura la
+          <em>memorizzazione</em>, non la generalizzazione. Vedremo nelle prossime
+          lezioni la <code>train_test_split</code> per separare un set di test.
+        </div>
+      </section>
+
+      <!-- ============== 6. CONFUSION MATRIX ============== -->
+      <section id="sec-confusion">
+        <h2 class="section-title">6. Matrice di confusione &amp; accuracy</h2>
+        <p>
+          Calcoliamo manualmente la <strong>matrice di confusione</strong>:
+        </p>
+
+<pre data-runnable data-pandas="true" data-sklearn="true" data-title="confusion.py" data-lang="python">HEROES_CSV = """\
+Name;Publisher;Height;Weight;Strength;Intelligence;Hair_code;Eye_code
+Iron Man;Marvel Comics;198;102;85;3;0;1
+Hulk;Marvel Comics;244;630;100;1;3;2
+Spider-Man;Marvel Comics;178;74;55;3;1;4
+Wolverine;Marvel Comics;160;88;75;2;0;1
+Storm;Marvel Comics;180;57;30;2;6;5
+Thor;Marvel Comics;198;292;100;2;2;1
+Black Widow;Marvel Comics;170;59;13;2;5;2
+Captain America;Marvel Comics;188;108;19;2;2;1
+Doctor Strange;Marvel Comics;188;83;10;3;0;3
+Magneto;Marvel Comics;188;86;55;3;0;3
+Venom;Marvel Comics;190;163;85;2;0;1
+Daredevil;Marvel Comics;185;90;15;2;5;1
+Black Panther;Marvel Comics;183;90;30;3;0;5
+Punisher;Marvel Comics;188;95;15;2;1;1
+Deadpool;Marvel Comics;188;95;30;1;1;5
+Batman;DC Comics;188;95;26;3;0;1
+Superman;DC Comics;191;101;100;2;0;1
+Wonder Woman;DC Comics;183;75;100;2;0;1
+Joker;DC Comics;196;86;10;3;3;2
+Aquaman;DC Comics;185;100;85;1;2;1
+Catwoman;DC Comics;175;55;14;2;0;2
+Flash;DC Comics;183;80;26;1;5;2
+Cyborg;DC Comics;198;172;80;1;0;5
+Penguin;DC Comics;160;79;9;2;0;1
+Riddler;DC Comics;185;84;8;3;5;1
+"""
+import pandas as pd, io
+from sklearn.naive_bayes import GaussianNB
+
+heroes = pd.read_csv(io.StringIO(HEROES_CSV), sep=';', index_col='Name')
+y = (heroes['Publisher'] == 'Marvel Comics').astype(int)
+X = heroes.drop(columns=['Publisher'])
+
+model = GaussianNB().fit(X, y)
+pred = model.predict(X)
+
+tp = int(((pred == 1) &amp; (y == 1)).sum())
+fn = int(((pred == 0) &amp; (y == 1)).sum())
+fp = int(((pred == 1) &amp; (y == 0)).sum())
+tn = int(((pred == 0) &amp; (y == 0)).sum())
+
+cm = pd.DataFrame(
+    [[tp, fn], [fp, tn]],
+    index=['Etichetta positiva (Marvel)', 'Etichetta negativa (DC)'],
+    columns=['Predetto positivo', 'Predetto negativo'],
+)
+print(cm)
+print(f"\nAccuracy = (TP + TN) / N = ({tp} + {tn}) / {len(y)} = {(tp + tn) / len(y):.3f}")
+</pre>
+
+        <div class="callout warning">
+          <strong>Classi sbilanciate.</strong> Se la classe positiva è molto più
+          frequente, anche un classificatore «sempre positivo» avrà alta accuracy.
+          Per dataset sbilanciati guardate sempre <em>precision, recall, F1</em>
+          e la matrice completa, non solo l'accuracy.
+        </div>
+
+        <div class="quiz" data-id="q-conf-1">
+          <h4>Su 100 supereroi (90 Marvel, 10 DC) un classificatore predice sempre
+            «Marvel». Quale accuracy ottiene?</h4>
+          <ul class="quiz-options">
+            <li>0.10</li>
+            <li>0.50</li>
+            <li data-correct>0.90 (ma è inutile: recall sui DC = 0)</li>
+            <li>1.00</li>
+          </ul>
+        </div>
+
+        <div class="quiz" data-id="q-conf-2">
+          <h4>Quale variante di Naive Bayes uso per dati continui (es. altezza, peso)?</h4>
+          <ul class="quiz-options">
+            <li>BernoulliNB</li>
+            <li>MultinomialNB</li>
+            <li data-correct>GaussianNB</li>
+            <li>CategoricalNB</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ============== 7. ESERCIZI FINALI ============== -->
+      <section id="sec-finale">
+        <h2 class="section-title">7. Esercizi finali</h2>
+
+        <div class="exercise">
+          <h4>Esercizio 1 — Bayes a mano sui malati</h4>
+          <p>
+            Una malattia ha prevalenza \(\mathrm P(D) = 0{,}01\). Un test ha
+            sensibilità \(\mathrm P(+ \mid D) = 0{,}99\) e specificità
+            \(\mathrm P(- \mid \overline{D}) = 0{,}95\) (cioè
+            \(\mathrm P(+ \mid \overline{D}) = 0{,}05\)).
+            Una persona positiva, qual è la probabilità che sia davvero malata?
+          </p>
+
+<pre data-runnable data-title="esercizio1.py" data-lang="python"># Tua soluzione qui
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-title="soluzione1.py" data-lang="python">p_d = 0.01
+p_pos_given_d = 0.99
+p_pos_given_no_d = 0.05
+
+p_no_d = 1 - p_d
+p_pos = p_pos_given_d * p_d + p_pos_given_no_d * p_no_d
+p_d_given_pos = p_pos_given_d * p_d / p_pos
+
+print(f"P(positivo)             = {p_pos:.4f}")
+print(f"P(malato | positivo)    = {p_d_given_pos:.4f}")
+print("Anche con un test 'molto buono', la rarità della malattia rende dubbio il positivo!")
+</pre>
+          </div>
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 2 — Naive Bayes a mano (due feature binarie)</h4>
+          <p>
+            Su 100 mail: 60 sono spam, 40 ham. Tra le spam, l'80% contiene la parola
+            «vinci» e il 70% «gratis». Tra le ham, il 10% contiene «vinci» e il 5%
+            «gratis». Una mail contiene entrambe: meglio classificarla come spam?
+          </p>
+          <p class="hint">
+            Confronta \( \mathrm P(\text{spam}) \cdot \mathrm P(\text{vinci}\mid\text{spam}) \cdot \mathrm P(\text{gratis}\mid\text{spam}) \)
+            con il corrispondente prodotto per \(\text{ham}\). Il vincitore non
+            cambia se ometti il denominatore comune.
+          </p>
+
+<pre data-runnable data-title="esercizio2.py" data-lang="python"># Tua soluzione qui
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-title="soluzione2.py" data-lang="python">p_spam = 0.60
+p_ham  = 0.40
+
+s_spam = p_spam * 0.80 * 0.70  # P(spam) * P(vinci|spam) * P(gratis|spam)
+s_ham  = p_ham  * 0.10 * 0.05  # idem per ham
+
+print(f"score spam = {s_spam:.4f}")
+print(f"score ham  = {s_ham:.4f}")
+print("→ classifico come:", "SPAM" if s_spam &gt; s_ham else "HAM")
+
+# In probabilità (normalizzate):
+tot = s_spam + s_ham
+print(f"\nP(spam | mail) ≈ {s_spam/tot:.3f}")
+print(f"P(ham  | mail) ≈ {s_ham/tot:.3f}")
+</pre>
+          </div>
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 3 — Confronto: GaussianNB vs MultinomialNB</h4>
+          <p>
+            Sul dataset cifre <code>load_digits()</code> (8×8 pixel), addestra sia
+            <code>GaussianNB</code> sia <code>MultinomialNB</code> e confronta
+            l'accuracy sui dati di training. Quale funziona meglio? Perché?
+          </p>
+          <p class="hint">
+            I pixel sono interi (0–16): si comportano più come «conteggi» o come
+            valori continui?
+          </p>
+
+<pre data-runnable data-sklearn="true" data-title="esercizio3.py" data-lang="python"># Tua soluzione qui
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-sklearn="true" data-title="soluzione3.py" data-lang="python">from sklearn.datasets import load_digits
+from sklearn.naive_bayes import GaussianNB, MultinomialNB
+
+X, y = load_digits(return_X_y=True)
+
+g = GaussianNB().fit(X, y)
+m = MultinomialNB().fit(X, y)
+
+print(f"GaussianNB    accuracy: {(g.predict(X) == y).mean():.3f}")
+print(f"MultinomialNB accuracy: {(m.predict(X) == y).mean():.3f}")
+# Sui pixel 0-16 il MultinomialNB di solito va meglio: i valori sono "conteggi",
+# non veri continui distribuiti come gaussiane.
+</pre>
+          </div>
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 4 — Train/test split</h4>
+          <p>
+            Stesso dataset cifre, ma ora separa il 25% dei dati per il test e
+            confronta accuracy training vs accuracy test. Cosa noti?
+          </p>
+
+<pre data-runnable data-sklearn="true" data-title="esercizio4.py" data-lang="python"># Tua soluzione qui
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-sklearn="true" data-title="soluzione4.py" data-lang="python">from sklearn.datasets import load_digits
+from sklearn.naive_bayes import GaussianNB
+from sklearn.model_selection import train_test_split
+
+X, y = load_digits(return_X_y=True)
+X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.25, random_state=42)
+
+m = GaussianNB().fit(X_tr, y_tr)
+print(f"Accuracy training: {(m.predict(X_tr) == y_tr).mean():.3f}")
+print(f"Accuracy test    : {(m.predict(X_te) == y_te).mean():.3f}")
+# L'accuracy di test è la stima onesta della performance su dati nuovi.
+</pre>
+          </div>
+        </div>
+
+        <h3>Riepilogo</h3>
+        <ul>
+          <li><strong>Bayes</strong>: \(\mathrm P(A\mid B) = \mathrm P(B\mid A)\mathrm P(A)/\mathrm P(B)\), permette di invertire il condizionamento.</li>
+          <li>Si stimano \(\mathrm P(Y)\) e \(\mathrm P(X_i\mid Y)\) come frequenze relative sui dati.</li>
+          <li>L'<strong>ipotesi naive</strong> \(\mathrm P(X_1, \dots, X_n \mid Y) \approx \prod_i \mathrm P(X_i \mid Y)\) rende l'algoritmo praticabile.</li>
+          <li>La regola di decisione è \(\arg\max_k \mathrm P(Y=y_k) \prod_i \mathrm P(X_i\mid Y=y_k)\).</li>
+          <li><code>sklearn.naive_bayes</code> offre <code>GaussianNB</code>, <code>MultinomialNB</code>, <code>BernoulliNB</code>, <code>CategoricalNB</code>.</li>
+          <li>Valutare su <em>dati nuovi</em>; con classi sbilanciate guardare oltre l'accuracy.</li>
+        </ul>
+
+        <p style="margin-top: 24px;">
+          Prossima fermata:
+          <strong><a href="lezione-11.html">L11 — Distribuzione geometrica</a></strong>
+          (variabili aleatorie discrete, attesa, varianza, distribuzione di Poisson).
+        </p>
+      </section>
+
+      <footer class="footer">
+        L10 · Naive Bayes — Interactive Learning · Superhero Data Science
+      </footer>
+    </main>
+  </div>
+
+  <script src="assets/app.js" defer></script>
+</body>
+</html>

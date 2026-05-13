@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L07 · Analisi della varianza — Interactive Learning</title>
+  <meta name="description" content="ANOVA: scomposizione della varianza tra gruppi (between) ed entro i gruppi (within)." />
+  <link rel="stylesheet" href="assets/styles.css" />
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">SD</div>
+        <div>
+          <strong>Lezione 07</strong>
+          <small>Analisi della varianza</small>
+        </div>
+      </div>
+
+      <p style="margin: 0 0 8px;">
+        <a href="index.html" style="font-size:0.85rem;">← Torna all'indice</a>
+      </p>
+
+      <h2>In questa lezione</h2>
+      <ul class="toc">
+        <li><a href="#sec-idea">1. L'idea: confrontare gruppi</a></li>
+        <li><a href="#sec-formule">2. Scomposizione: SST = SSW + SSB</a></li>
+        <li><a href="#sec-anova">3. ANOVA passo per passo</a></li>
+        <li><a href="#sec-funzione">4. Una funzione <code>anova</code></a></li>
+        <li><a href="#sec-interp">5. Interpretazione</a></li>
+        <li><a href="#sec-finale">6. Riepilogo &amp; sfida finale</a></li>
+      </ul>
+    </aside>
+
+    <main class="main">
+
+      <div class="theme-toggle">
+        <button class="btn ghost" type="button">🌙 Tema scuro</button>
+      </div>
+
+      <section class="hero">
+        <h1>L07 · Analisi della varianza (ANOVA)</h1>
+        <p>
+          Hai osservato un attributo numerico (forza, peso, prezzo, reddito…) suddiviso
+          in <em>più gruppi</em>. Sono davvero diversi tra loro? L'ANOVA risponde
+          confrontando la varianza all'interno di ciascun gruppo con la varianza
+          totale.
+        </p>
+        <div class="meta">
+          <span>≈ 30–40 minuti</span>
+          <span>7 quiz</span>
+          <span>3 esercizi</span>
+          <span>Statistica inferenziale</span>
+        </div>
+        <div class="progress-wrap" title="Progresso quiz">
+          <div class="progress-bar"></div>
+        </div>
+      </section>
+
+      <!-- ============== 1. IDEA ============== -->
+      <section id="sec-idea">
+        <h2 class="section-title">1. L'idea: i gruppi sono davvero diversi?</h2>
+        <p>
+          Hai dati \(x_i^g\) dove \(g = 1, \dots, G\) indica il gruppo di
+          appartenenza. Vuoi capire se le medie nei diversi gruppi
+          \(\overline x^1, \overline x^2, \dots, \overline x^G\) sono
+          <em>significativamente</em> diverse oppure se le differenze osservate
+          potrebbero essere semplice rumore.
+        </p>
+        <p>
+          L'intuizione: se i gruppi sono <em>identici</em>, la dispersione totale dei
+          dati è ben spiegata dalla dispersione interna a ciascun gruppo. Se invece i
+          gruppi sono diversi, una parte importante della dispersione si genera
+          <em>tra</em> le medie dei gruppi.
+        </p>
+      </section>
+
+      <!-- ============== 2. FORMULE ============== -->
+      <section id="sec-formule">
+        <h2 class="section-title">2. Scomposizione fondamentale: SS<sub>T</sub> = SS<sub>W</sub> + SS<sub>B</sub></h2>
+        <p>Definiamo:</p>
+        <ul>
+          <li>media globale: \(\overline x = \frac{1}{n}\sum_g \sum_i x_i^g\);</li>
+          <li>media del gruppo \(g\): \(\overline x^g = \frac{1}{n_g}\sum_i x_i^g\);</li>
+          <li>somma totale degli scarti:
+            \(\mathrm{SS}_T = \sum_g \sum_i (x_i^g - \overline x)^2\);</li>
+          <li>somma <em>within</em> (entro i gruppi):
+            \(\mathrm{SS}_W = \sum_g \sum_i (x_i^g - \overline x^g)^2\);</li>
+          <li>somma <em>between</em> (tra i gruppi):
+            \(\mathrm{SS}_B = \sum_g n_g (\overline x^g - \overline x)^2\).</li>
+        </ul>
+        <p>Si dimostra che vale l'identità fondamentale</p>
+        <p>\[ \mathrm{SS}_T = \mathrm{SS}_W + \mathrm{SS}_B \]</p>
+        <p>Le corrispondenti varianze (campionarie) sono:</p>
+        <ul>
+          <li>varianza totale: \(s_T^2 = \mathrm{SS}_T / (n-1)\);</li>
+          <li>varianza within: \(s_W^2 = \mathrm{SS}_W / (n - G)\);</li>
+          <li>varianza between: \(s_B^2 = \mathrm{SS}_B / (G - 1)\).</li>
+        </ul>
+
+        <div class="callout info">
+          <strong>Idea operativa.</strong> Se \(s_T^2 \approx s_W^2\) (cioè \(s_B^2\)
+          piccola): le medie dei gruppi sono praticamente uguali, l'ipotesi di
+          differenza si confuta. Se \(s_B^2\) è grande rispetto a \(s_W^2\): le medie
+          dei gruppi differiscono, l'ipotesi si avvalora.
+        </div>
+      </section>
+
+      <!-- ============== 3. ANOVA STEP ============== -->
+      <section id="sec-anova">
+        <h2 class="section-title">3. ANOVA passo per passo</h2>
+        <p>
+          Calcoliamo manualmente le tre somme degli scarti per due gruppi: la forza
+          dei supereroi Marvel e quella dei DC.
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="anova_steps.py" data-lang="python">CSV = """\
+Name;Publisher;Strength
+Iron Man;Marvel Comics;85
+Hulk;Marvel Comics;100
+Spider-Man;Marvel Comics;55
+Wolverine;Marvel Comics;75
+Storm;Marvel Comics;30
+Thor;Marvel Comics;100
+Black Widow;Marvel Comics;13
+Captain America;Marvel Comics;19
+Doctor Strange;Marvel Comics;10
+Magneto;Marvel Comics;55
+Vision;Marvel Comics;75
+Hawkeye;Marvel Comics;14
+Daredevil;Marvel Comics;19
+Black Panther;Marvel Comics;16
+Mystique;Marvel Comics;14
+Rogue;Marvel Comics;65
+Jean Grey;Marvel Comics;20
+Batman;DC Comics;26
+Superman;DC Comics;100
+Wonder Woman;DC Comics;100
+Aquaman;DC Comics;85
+Flash;DC Comics;26
+Cyborg;DC Comics;80
+Joker;DC Comics;10
+Catwoman;DC Comics;14
+Robin;DC Comics;14
+Penguin;DC Comics;9
+Lex Luthor;DC Comics;10
+Green Lantern;DC Comics;75
+Martian Manhunter;DC Comics;100
+"""
+import pandas as pd, io
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+
+marvel = df.loc[df['Publisher']=='Marvel Comics', 'Strength']
+dc     = df.loc[df['Publisher']=='DC Comics',     'Strength']
+all_   = pd.concat([marvel, dc])
+
+# 1) SS totale
+ss_total = ((all_ - all_.mean())**2).sum()
+
+# 2) SS within
+ss_within = (((marvel - marvel.mean())**2).sum() +
+             ((dc     - dc.mean())**2).sum())
+
+# 3) SS between
+ss_between = (len(marvel) * (marvel.mean() - all_.mean())**2 +
+              len(dc)     * (dc.mean()     - all_.mean())**2)
+
+print(f"SS_T = {ss_total:.2f}")
+print(f"SS_W = {ss_within:.2f}")
+print(f"SS_B = {ss_between:.2f}")
+print(f"SS_W + SS_B = {ss_within + ss_between:.2f}")
+print(f"\nFollow-up: SS_T - SS_W - SS_B = {ss_total - ss_within - ss_between:+.2e} (≈ 0)")
+</pre>
+
+        <p>Calcolando le varianze:</p>
+
+<pre data-runnable data-pandas="true" data-title="anova_var.py" data-lang="python">CSV = """\
+Name;Publisher;Strength
+Iron Man;Marvel Comics;85
+Hulk;Marvel Comics;100
+Spider-Man;Marvel Comics;55
+Wolverine;Marvel Comics;75
+Storm;Marvel Comics;30
+Thor;Marvel Comics;100
+Black Widow;Marvel Comics;13
+Captain America;Marvel Comics;19
+Doctor Strange;Marvel Comics;10
+Magneto;Marvel Comics;55
+Batman;DC Comics;26
+Superman;DC Comics;100
+Wonder Woman;DC Comics;100
+Aquaman;DC Comics;85
+Flash;DC Comics;26
+Cyborg;DC Comics;80
+Joker;DC Comics;10
+Catwoman;DC Comics;14
+Robin;DC Comics;14
+Penguin;DC Comics;9
+"""
+import pandas as pd, io
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+marvel = df.loc[df['Publisher']=='Marvel Comics', 'Strength']
+dc     = df.loc[df['Publisher']=='DC Comics',     'Strength']
+all_   = pd.concat([marvel, dc])
+G      = 2
+n      = len(all_)
+
+ss_t = ((all_ - all_.mean())**2).sum()
+ss_w = ((marvel - marvel.mean())**2).sum() + ((dc - dc.mean())**2).sum()
+ss_b = (len(marvel)*(marvel.mean()-all_.mean())**2 +
+        len(dc)    *(dc.mean()    -all_.mean())**2)
+
+s2_t = ss_t / (n - 1)
+s2_w = ss_w / (n - G)
+s2_b = ss_b / (G - 1)
+
+print(f"varianza totale  = {s2_t:.2f}")
+print(f"varianza within  = {s2_w:.2f}")
+print(f"varianza between = {s2_b:.2f}")
+print(f"\nF-ratio (s2_b / s2_w) = {s2_b / s2_w:.3f}")
+print("(più grande = i gruppi differiscono di più)")
+</pre>
+
+        <div class="quiz" data-id="q-anova-1">
+          <h4>L'identità \(\mathrm{SS}_T = \mathrm{SS}_W + \mathrm{SS}_B\) è:</h4>
+          <ul class="quiz-options">
+            <li>un'approssimazione valida solo per due gruppi.</li>
+            <li>vera solo se le medie dei gruppi sono uguali.</li>
+            <li data-correct>un'identità algebrica esatta, vera per qualsiasi numero di gruppi.</li>
+            <li>vera solo per dati standardizzati.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ============== 4. FUNZIONE ============== -->
+      <section id="sec-funzione">
+        <h2 class="section-title">4. Una funzione <code>anova</code> riutilizzabile</h2>
+        <p>
+          Generalizziamo la procedura per accettare un numero arbitrario di gruppi:
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="anova_function.py" data-lang="python">import pandas as pd
+import numpy as np
+
+def anova(groups):
+    """Restituisce (var_totale, var_within_pesata)."""
+    all_ = pd.concat(groups)
+    n = len(all_)
+    G = len(groups)
+
+    ss_t = ((all_ - all_.mean())**2).sum()
+    ss_w = sum(((g - g.mean())**2).sum() for g in groups)
+    ss_b = sum(len(g) * (g.mean() - all_.mean())**2 for g in groups)
+
+    assert abs(ss_t - ss_w - ss_b) &lt; 1e-6, "identità violata!"
+
+    var_t = ss_t / (n - 1)
+    var_w = ss_w / (n - G)
+    # varianza within "rinormalizzata" sullo stesso denominatore di var_t
+    return var_t, var_w * (n - G) / (n - 1)
+
+
+# Test con due gruppi: forza Marvel vs DC
+marvel = pd.Series([85, 100, 55, 75, 30, 100, 13, 19, 10, 55])
+dc     = pd.Series([26, 100, 100, 85, 26, 80, 10, 14, 14, 9])
+print("Marvel vs DC:", anova([marvel, dc]))
+
+# Test con tre gruppi: peso suddiviso per editore
+weight_marvel = pd.Series([191.85, 630.32, 72.97, 135.21, 291.45, 58.96, 81.46])
+weight_dc     = pd.Series([95.78, 107.62, 74.74, 146.96, 90.74, 176.32])
+weight_other  = pd.Series([66.0, 79.43, 81.26])
+print("3 editori:    ", anova([weight_marvel, weight_dc, weight_other]))
+</pre>
+      </section>
+
+      <!-- ============== 5. INTERPRETAZIONE ============== -->
+      <section id="sec-interp">
+        <h2 class="section-title">5. Interpretazione qualitativa</h2>
+        <p>
+          Dato il risultato di <code>anova(groups)</code>, ottieni due numeri:
+          <code>var_t</code> e <code>var_w</code>. Confrontali:
+        </p>
+        <ul>
+          <li><strong>vicini</strong>: la variabilità totale è tutta «interna» ai gruppi
+            ⇒ le medie dei gruppi sono simili (ipotesi di differenza confutata);</li>
+          <li><strong>var_t molto maggiore di var_w</strong>: una parte importante
+            della varianza totale è generata dalle differenze tra le medie
+            dei gruppi ⇒ ipotesi di differenza avvalorata.</li>
+        </ul>
+
+        <div class="callout warning">
+          <strong>Test formale.</strong> In statistica inferenziale, il rapporto
+          \(F = s_B^2 / s_W^2\) è messo a confronto con la distribuzione di Fisher per
+          calcolare un p-value. Quel passaggio richiede ipotesi (normalità, varianze
+          omogenee…) e va oltre lo scopo di questa lezione. Qui ci limitiamo a un
+          confronto qualitativo.
+        </div>
+
+        <div class="quiz" data-id="q-interp-1">
+          <h4>ANOVA su pesi: var_totale = 12000, var_within = 11900. Cosa concludi?</h4>
+          <ul class="quiz-options">
+            <li>I gruppi hanno medie molto diverse.</li>
+            <li data-correct>I gruppi hanno medie sostanzialmente simili (la differenza è dentro i gruppi).</li>
+            <li>I dati sono distribuiti in modo normale.</li>
+            <li>Un gruppo è chiaramente outlier rispetto agli altri.</li>
+          </ul>
+          <div class="quiz-explain">
+            Se quasi tutta la varianza totale è spiegata dalla varianza within,
+            significa che le medie tra i gruppi sono simili e la varianza between è
+            trascurabile.
+          </div>
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 1 — ANOVA su un attributo a tua scelta</h4>
+          <p>
+            Sul CSV qui sotto, applica la funzione <code>anova</code> all'attributo
+            <code>Weight</code> separato per <code>Gender</code>. C'è una differenza
+            sostanziale di peso tra M e F?
+          </p>
+
+<pre data-runnable data-pandas="true" data-title="esercizio1.py" data-lang="python">CSV = """\
+Name;Gender;Weight
+Iron Man;M;191.85
+Hulk;M;630.32
+Batman;M;95.78
+Superman;M;107.62
+Wonder Woman;F;74.74
+Spider-Man;M;72.97
+Wolverine;M;135.21
+Storm;F;58.96
+Thor;M;291.45
+Black Widow;F;58.39
+Captain America;M;108.10
+Joker;M;79.85
+Aquaman;M;146.96
+Catwoman;F;57.34
+Flash;M;90.74
+Cyborg;M;176.32
+Doctor Strange;M;81.46
+Magneto;M;87.55
+Penguin;M;79.43
+Mystique;F;55.40
+Rogue;F;55.39
+Jean Grey;F;52.65
+"""
+import pandas as pd, io
+
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+# Tua soluzione qui
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-pandas="true" data-title="soluzione1.py" data-lang="python">CSV = """\
+Name;Gender;Weight
+Iron Man;M;191.85
+Hulk;M;630.32
+Batman;M;95.78
+Superman;M;107.62
+Wonder Woman;F;74.74
+Spider-Man;M;72.97
+Wolverine;M;135.21
+Storm;F;58.96
+Thor;M;291.45
+Black Widow;F;58.39
+Captain America;M;108.10
+Joker;M;79.85
+Aquaman;M;146.96
+Catwoman;F;57.34
+Flash;M;90.74
+Cyborg;M;176.32
+Doctor Strange;M;81.46
+Magneto;M;87.55
+Penguin;M;79.43
+Mystique;F;55.40
+Rogue;F;55.39
+Jean Grey;F;52.65
+"""
+import pandas as pd, io
+
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+
+def anova(groups):
+    import pandas as pd
+    all_ = pd.concat(groups)
+    n, G = len(all_), len(groups)
+    ss_t = ((all_ - all_.mean())**2).sum()
+    ss_w = sum(((g - g.mean())**2).sum() for g in groups)
+    return ss_t/(n-1), ss_w/(n-G) * (n-G)/(n-1)
+
+m = df.loc[df['Gender']=='M', 'Weight']
+f = df.loc[df['Gender']=='F', 'Weight']
+
+print(f"Medie:  M = {m.mean():.1f}   F = {f.mean():.1f}")
+print(f"Varianze (totale, within): {anova([m, f])}")
+
+# La var_totale è molto maggiore della var_within → c'è differenza marcata
+# di peso tra i due gruppi (anche con outlier come Hulk).
+</pre>
+          </div>
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 2 — ANOVA su 3+ gruppi</h4>
+          <p>
+            Sul CSV qui sotto, applica l'ANOVA all'attributo <code>Strength</code>
+            suddiviso per <code>Intelligence</code>. La forza varia in modo importante
+            con il livello di intelligenza?
+          </p>
+
+<pre data-runnable data-pandas="true" data-title="esercizio2.py" data-lang="python">CSV = """\
+Name;Intelligence;Strength
+Iron Man;high;85
+Batman;high;26
+Spider-Man;high;55
+Joker;high;10
+Doctor Strange;high;10
+Magneto;high;55
+Jean Grey;high;20
+Hulk;moderate;100
+Aquaman;moderate;85
+Flash;moderate;26
+Cyborg;moderate;80
+Venom;moderate;85
+Rogue;moderate;65
+Wolverine;average;75
+Storm;average;30
+Black Widow;average;13
+Catwoman;average;14
+Penguin;average;9
+Hawkeye;average;14
+Superman;good;100
+Wonder Woman;good;100
+Thor;good;100
+Captain America;good;19
+Mystique;good;14
+"""
+import pandas as pd, io
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+# Tua soluzione qui
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-pandas="true" data-title="soluzione2.py" data-lang="python">CSV = """\
+Name;Intelligence;Strength
+Iron Man;high;85
+Batman;high;26
+Spider-Man;high;55
+Joker;high;10
+Doctor Strange;high;10
+Magneto;high;55
+Jean Grey;high;20
+Hulk;moderate;100
+Aquaman;moderate;85
+Flash;moderate;26
+Cyborg;moderate;80
+Venom;moderate;85
+Rogue;moderate;65
+Wolverine;average;75
+Storm;average;30
+Black Widow;average;13
+Catwoman;average;14
+Penguin;average;9
+Hawkeye;average;14
+Superman;good;100
+Wonder Woman;good;100
+Thor;good;100
+Captain America;good;19
+Mystique;good;14
+"""
+import pandas as pd, io
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+
+def anova(groups):
+    import pandas as pd
+    all_ = pd.concat(groups)
+    n, G = len(all_), len(groups)
+    ss_t = ((all_ - all_.mean())**2).sum()
+    ss_w = sum(((g - g.mean())**2).sum() for g in groups)
+    return ss_t/(n-1), ss_w/(n-G) * (n-G)/(n-1)
+
+groups = [df.loc[df['Intelligence']==lv, 'Strength']
+          for lv in df['Intelligence'].unique()]
+
+print("Medie per gruppo:")
+print(df.groupby('Intelligence')['Strength'].mean().round(2))
+
+print(f"\nANOVA: var_t = {anova(groups)[0]:.2f}, var_w = {anova(groups)[1]:.2f}")
+</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 6. RIEPILOGO ============== -->
+      <section id="sec-finale">
+        <h2 class="section-title">6. Riepilogo &amp; sfida finale</h2>
+        <ul>
+          <li>L'<strong>ANOVA</strong> scompone la varianza totale in <em>within</em> (entro i gruppi) e <em>between</em> (tra i gruppi).</li>
+          <li>L'identità <code>SS_T = SS_W + SS_B</code> è una proprietà algebrica.</li>
+          <li>Se <code>var_t ≈ var_w</code>: gruppi simili. Se <code>var_t &gt;&gt; var_w</code>: gruppi distinti.</li>
+          <li>La versione "vera" dell'ANOVA usa il rapporto F per calcolare un p-value: noi qui ci fermiamo a una lettura <em>qualitativa</em>.</li>
+        </ul>
+
+        <div class="quiz" data-id="q-final-1">
+          <h4>SS<sub>between</sub> = 0 implica:</h4>
+          <ul class="quiz-options">
+            <li>tutti i dati sono uguali.</li>
+            <li data-correct>tutti i gruppi hanno la stessa media.</li>
+            <li>la varianza è 0.</li>
+            <li>i gruppi sono molto diversi.</li>
+          </ul>
+        </div>
+
+        <div class="quiz" data-id="q-final-2">
+          <h4>Se aumento <code>n</code> dentro a un gruppo (più osservazioni), come cambia
+            tipicamente il rapporto <code>SS_T / SS_W</code>?</h4>
+          <ul class="quiz-options">
+            <li>Diminuisce sempre.</li>
+            <li>Aumenta sempre.</li>
+            <li data-correct>Dipende dai dati: l'identità vale ancora ma le proporzioni cambiano.</li>
+            <li>Resta uguale.</li>
+          </ul>
+        </div>
+
+        <div class="exercise">
+          <h4>Sfida finale — Trova il "vero" gruppo discriminante</h4>
+          <p>
+            Dato il CSV qui sotto, applica ANOVA dell'attributo <code>Weight</code>
+            <em>per ogni</em> attributo categorico tra <code>Gender</code>,
+            <code>Publisher</code>, <code>Eye color</code>. Quale fattore separa
+            meglio la distribuzione del peso?
+          </p>
+
+<pre data-runnable data-pandas="true" data-title="sfida.py" data-lang="python">CSV = """\
+Name;Gender;Publisher;Eye color;Weight
+Iron Man;M;Marvel Comics;Blue;191.85
+Hulk;M;Marvel Comics;Green;630.32
+Batman;M;DC Comics;Blue;95.78
+Superman;M;DC Comics;Blue;107.62
+Wonder Woman;F;DC Comics;Blue;74.74
+Spider-Man;M;Marvel Comics;Hazel;72.97
+Wolverine;M;Marvel Comics;Blue;135.21
+Storm;F;Marvel Comics;Blue;58.96
+Thor;M;Marvel Comics;Blue;291.45
+Black Widow;F;Marvel Comics;Green;58.39
+Captain America;M;Marvel Comics;Blue;108.10
+Joker;M;DC Comics;Green;79.85
+Aquaman;M;DC Comics;Blue;146.96
+Catwoman;F;DC Comics;Green;57.34
+Flash;M;DC Comics;Green;90.74
+Cyborg;M;DC Comics;Brown;176.32
+Doctor Strange;M;Marvel Comics;Grey;81.46
+Magneto;M;Marvel Comics;Blue;87.55
+Penguin;M;DC Comics;Blue;79.43
+Mystique;F;Marvel Comics;Yellow;55.40
+"""
+import pandas as pd, io
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+
+def anova(groups):
+    import pandas as pd
+    all_ = pd.concat(groups)
+    n, G = len(all_), len(groups)
+    ss_t = ((all_ - all_.mean())**2).sum()
+    ss_w = sum(((g - g.mean())**2).sum() for g in groups)
+    return ss_t/(n-1), ss_w/(n-G) * (n-G)/(n-1)
+
+# Tua soluzione qui
+</pre>
+        </div>
+
+        <p style="margin-top: 24px;">
+          Prossima fermata:
+          <strong><a href="lezione-08.html">L08 — Analisi di classificatori</a></strong>
+          (matrice di confusione, sensibilità/specificità, ROC, AUC).
+        </p>
+      </section>
+
+      <footer class="footer">
+        L07 · Analisi della varianza — Interactive Learning · Superhero Data Science
+      </footer>
+    </main>
+  </div>
+
+  <script src="assets/app.js" defer></script>
+</body>
+</html>

@@ -16,6 +16,17 @@ Ogni lezione è una pagina HTML autonoma che combina:
 interactive-learning/
 ├── index.html          # hub con l'elenco delle lezioni
 ├── lezione-01.html     # L01 — Introduzione a Python
+├── lezione-02.html     # L02 — Pandas: Series & DataFrame
+├── lezione-03.html     # L03 — Dati e frequenze
+├── lezione-04.html     # L04 — Indici di dispersione
+├── lezione-05.html     # L05 — Eterogeneità & concentrazione
+├── lezione-06.html     # L06 — Trasformazione dei dati
+├── lezione-07.html     # L07 — Analisi della varianza
+├── lezione-08.html     # L08 — Analisi di classificatori
+├── lezione-09.html     # L09 — Calcolo combinatorio
+├── lezione-10.html     # L10 — Naive Bayes
+├── lezione-11.html     # L11 — Distribuzione geometrica
+├── lezione-12.html     # L12 — Ripasso integrato
 ├── assets/
 │   ├── styles.css      # stile condiviso (dark + light)
 │   └── app.js          # Pyodide loader, code playground, quiz, esercizi
@@ -47,12 +58,20 @@ Click destro su `index.html` → *Open with Live Server*.
 
 ## Lezioni disponibili
 
-| ID    | Titolo                                  | Stato            |
-|-------|-----------------------------------------|------------------|
-| L01   | Introduzione a Python                   | ✅ Disponibile    |
-| L02   | Pandas: Series &amp; DataFrame          | ✅ Disponibile    |
-| L03   | Statistica descrittiva                  | 🚧 In arrivo     |
-| L09   | Calcolo combinatorio                    | 🚧 In arrivo     |
+| ID    | Titolo                                          | Stato            |
+|-------|-------------------------------------------------|------------------|
+| L01   | Introduzione a Python                           | ✅ Disponibile    |
+| L02   | Pandas: Series &amp; DataFrame                  | ✅ Disponibile    |
+| L03   | Dati e frequenze                                | ✅ Disponibile    |
+| L04   | Indici di dispersione                           | ✅ Disponibile    |
+| L05   | Eterogeneità &amp; concentrazione               | ✅ Disponibile    |
+| L06   | Trasformazione dei dati                         | ✅ Disponibile    |
+| L07   | Analisi della varianza                          | ✅ Disponibile    |
+| L08   | Analisi di classificatori                       | ✅ Disponibile    |
+| L09   | Calcolo combinatorio                            | ✅ Disponibile    |
+| L10   | Naive Bayes                                     | ✅ Disponibile    |
+| L11   | Distribuzione geometrica                        | ✅ Disponibile    |
+| L12   | Ripasso integrato (Poisson, esponenziale, TCL)  | ✅ Disponibile    |
 
 ## Aggiungere una nuova lezione
 
@@ -66,7 +85,15 @@ Click destro su `index.html` → *Open with Live Server*.
    </pre>
    ```
 
-   Attributi opzionali: `data-matplotlib="true"` (carica numpy + matplotlib), `data-pandas="true"`, `data-autorun="true"`.
+   Attributi opzionali per il caricamento on-demand di pacchetti Pyodide:
+
+   - `data-matplotlib="true"` — numpy + matplotlib (con backend AGG per grafici inline);
+   - `data-pandas="true"` — pandas;
+   - `data-scipy="true"` — scipy (e `scipy.stats`);
+   - `data-sklearn="true"` — scikit-learn;
+   - `data-statsmodels="true"` — statsmodels (es. per `sm.qqplot`);
+   - `data-pkgs="numpy,scipy"` — elenco generico di pacchetti separati da virgola;
+   - `data-autorun="true"` — esegue il blocco appena la lezione è pronta.
 
 4. Per un quiz a risposta multipla:
 

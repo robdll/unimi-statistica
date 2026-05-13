@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L09 · Calcolo combinatorio — Interactive Learning</title>
+  <meta name="description" content="Permutazioni, disposizioni e combinazioni con e senza ripetizione." />
+  <link rel="stylesheet" href="assets/styles.css" />
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">SD</div>
+        <div>
+          <strong>Lezione 09</strong>
+          <small>Calcolo combinatorio</small>
+        </div>
+      </div>
+
+      <p style="margin: 0 0 8px;">
+        <a href="index.html" style="font-size:0.85rem;">← Torna all'indice</a>
+      </p>
+
+      <h2>In questa lezione</h2>
+      <ul class="toc">
+        <li><a href="#sec-fond">1. Principio fondamentale</a></li>
+        <li><a href="#sec-perm">2. Permutazioni</a>
+          <ul class="toc-sub">
+            <li><a href="#sec-perm-sem">2.1 Semplici</a></li>
+            <li><a href="#sec-perm-grp">2.2 Con gruppi (anagrammi)</a></li>
+          </ul>
+        </li>
+        <li><a href="#sec-disp">3. Disposizioni</a></li>
+        <li><a href="#sec-comb">4. Combinazioni</a></li>
+        <li><a href="#sec-table">5. Tabella riassuntiva</a></li>
+        <li><a href="#sec-py">6. Generare oggetti combinatori in Python</a></li>
+        <li><a href="#sec-finale">7. Esercizi finali</a></li>
+      </ul>
+    </aside>
+
+    <main class="main">
+
+      <div class="theme-toggle">
+        <button class="btn ghost" type="button">🌙 Tema scuro</button>
+      </div>
+
+      <section class="hero">
+        <h1>L09 · Calcolo combinatorio</h1>
+        <p>
+          Quanti modi ci sono per ordinare 5 supereroi in fila? Per scegliere 3 di
+          loro per una missione? Per anagrammare la parola «MATEMATICA»? La risposta
+          è data dalle quattro famiglie del calcolo combinatorio: permutazioni,
+          disposizioni e combinazioni, ognuna con e senza ripetizione.
+        </p>
+        <div class="meta">
+          <span>≈ 35–50 minuti</span>
+          <span>9 quiz</span>
+          <span>5 esercizi</span>
+          <span>Pochissime librerie</span>
+        </div>
+        <div class="progress-wrap" title="Progresso quiz">
+          <div class="progress-bar"></div>
+        </div>
+      </section>
+
+      <!-- ============== 1. FONDAMENTALE ============== -->
+      <section id="sec-fond">
+        <h2 class="section-title">1. Principio fondamentale del calcolo combinatorio</h2>
+        <p>
+          Se la prima scelta ha \(s_1\) modi possibili, la seconda \(s_2\), …, la
+          \(t\)-esima \(s_t\), allora il numero di sequenze possibili è
+        </p>
+        <p>\[ s_1 \cdot s_2 \cdot \dots \cdot s_t \]</p>
+        <p>
+          Equivale a contare le foglie di un albero di profondità \(t\) in cui ogni
+          nodo del livello \(i\) ha esattamente \(s_{i+1}\) figli.
+        </p>
+
+<pre data-runnable data-title="fondamentale.py" data-lang="python">scelte = [3, 4, 2]   # 3 antipasti, 4 primi, 2 secondi
+totale = 1
+for s in scelte:
+    totale *= s
+print(f"Menù possibili: {totale}")  # 24
+</pre>
+
+        <div class="quiz" data-id="q-fond-1">
+          <h4>Quanti PIN diversi di 4 cifre (da 0 a 9) si possono scrivere se le cifre
+            possono ripetersi?</h4>
+          <ul class="quiz-options">
+            <li>40</li>
+            <li>5040</li>
+            <li data-correct>10000</li>
+            <li>100</li>
+          </ul>
+          <div class="quiz-explain">
+            10 modi per la prima cifra × 10 × 10 × 10 = 10⁴ = 10000.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 2. PERMUTAZIONI ============== -->
+      <section id="sec-perm">
+        <h2 class="section-title">2. Permutazioni</h2>
+
+        <h3 id="sec-perm-sem">2.1 Permutazioni semplici</h3>
+        <p>
+          Una <em>permutazione</em> di \(n\) oggetti distinti è una sequenza ordinata
+          che li contiene tutti. Il numero è
+        </p>
+        <p>\[ P_n = n! = n \cdot (n-1) \cdot (n-2) \cdots 1 \]</p>
+        <p>
+          Conviene memorizzare alcuni valori notevoli: \(0! = 1\), \(5! = 120\),
+          \(10! = 3\,628\,800\), \(13! \approx 6.2 \cdot 10^9\).
+        </p>
+
+<pre data-runnable data-title="permutazioni.py" data-lang="python">import math
+
+eroi = ['Iron Man', 'Hulk', 'Thor', 'Black Widow', 'Hawkeye']
+
+print(f"5! = {math.factorial(5)}")
+print(f"In quanti modi posso disporre {len(eroi)} eroi in fila? {math.factorial(len(eroi))}")
+</pre>
+
+        <h3 id="sec-perm-grp">2.2 Permutazioni con gruppi (anagrammi)</h3>
+        <p>
+          Se gli \(n\) oggetti sono distinguibili solo a gruppi di numerosità
+          \(n_1, n_2, \dots, n_k\) (con \(\sum n_i = n\)), il numero di permutazioni
+          distinguibili è il <strong>coefficiente multinomiale</strong>:
+        </p>
+        <p>\[ P_{n; n_1, \dots, n_k} = \frac{n!}{n_1! \cdot n_2! \cdots n_k!} \]</p>
+
+<pre data-runnable data-title="anagrammi.py" data-lang="python">import math
+from collections import Counter
+
+def anagrammi_distinti(parola):
+    n = len(parola)
+    den = 1
+    for k in Counter(parola).values():
+        den *= math.factorial(k)
+    return math.factorial(n) // den
+
+print("ROMA       :", anagrammi_distinti("ROMA"))         # 4!  = 24
+print("PIPPO      :", anagrammi_distinti("PIPPO"))        # 5!/(2!2!) = 30
+print("MATEMATICA :", anagrammi_distinti("MATEMATICA"))   # 10!/(3!2!2!) = 151200
+</pre>
+
+        <div class="quiz" data-id="q-perm-1">
+          <h4>Quanti anagrammi distinti ha la parola «STATISTICA»?</h4>
+          <ul class="quiz-options">
+            <li>10! = 3 628 800</li>
+            <li>10!/(3!·3!) = 100 800</li>
+            <li>10!/(3!·2!·2!) = 151 200</li>
+            <li data-correct>10!/(3!·2!·2!·2!) = 75 600</li>
+          </ul>
+          <div class="quiz-explain">
+            STATISTICA ha 10 lettere con frequenze T=3, S=2, I=2, A=2, C=1. Il
+            denominatore è quindi 3!·2!·2!·2! = 48 e il risultato 10!/48 = 75 600.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 3. DISPOSIZIONI ============== -->
+      <section id="sec-disp">
+        <h2 class="section-title">3. Disposizioni</h2>
+        <p>
+          Una <em>disposizione</em> di \(n\) oggetti su \(k\) posti è una sequenza
+          <strong>ordinata</strong> di \(k\) elementi scelti dagli \(n\). L'ordine
+          conta: \((a, b)\) ≠ \((b, a)\).
+        </p>
+        <ul>
+          <li><strong>Senza ripetizione</strong> (richiede \(k \le n\)):
+            \[ d_{n,k} = \frac{n!}{(n-k)!} = n (n-1) \cdots (n-k+1) \]</li>
+          <li><strong>Con ripetizione</strong>:
+            \[ D_{n,k} = n^k \]</li>
+        </ul>
+
+<pre data-runnable data-title="disposizioni.py" data-lang="python">import math
+
+n, k = 6, 3
+
+d   = math.factorial(n) // math.factorial(n - k)   # senza ripetizione
+D   = n ** k                                       # con ripetizione
+
+print(f"Disposizioni senza ripetizione di {n} oggetti su {k} posti: {d}")
+print(f"Disposizioni con  ripetizione di {n} oggetti su {k} posti: {D}")
+
+# Esempio classico: 3 dadi distinguibili, facce tutte diverse
+print(f"\n3 dadi facce tutte diverse (dadi distinguibili): {math.factorial(6)//math.factorial(3)} = 120")
+
+# Esempio: numeri telefonici di 7 cifre tutte diverse
+print(f"Numeri telefonici di 7 cifre tutte diverse: {math.factorial(10)//math.factorial(3)} = 604800")
+</pre>
+
+        <div class="callout info">
+          <strong>Caso speciale.</strong> Quando \(k = n\), una disposizione semplice
+          coincide con una permutazione: \(d_{n,n} = n!/0! = n!\).
+        </div>
+      </section>
+
+      <!-- ============== 4. COMBINAZIONI ============== -->
+      <section id="sec-comb">
+        <h2 class="section-title">4. Combinazioni</h2>
+        <p>
+          Le <em>combinazioni</em> sono sequenze in cui l'ordine NON conta:
+          \(\{a, b\} = \{b, a\}\).
+        </p>
+        <ul>
+          <li><strong>Senza ripetizione</strong>:
+            \[ c_{n,k} = \binom{n}{k} = \frac{n!}{k!(n-k)!} \]</li>
+          <li><strong>Con ripetizione</strong>:
+            \[ C_{n,k} = \binom{n+k-1}{k} \]</li>
+        </ul>
+        <p>
+          Una combinazione semplice è una disposizione semplice in cui «collassiamo»
+          i \(k!\) ordini possibili degli stessi \(k\) oggetti: \(c_{n,k} =
+          d_{n,k} / k!\).
+        </p>
+
+<pre data-runnable data-title="combinazioni.py" data-lang="python">import math
+
+n, k = 6, 3
+c = math.comb(n, k)             # senza ripetizione
+C = math.comb(n + k - 1, k)     # con ripetizione
+
+print(f"Combinazioni senza ripetizione: C({n},{k}) = {c}")
+print(f"Combinazioni con  ripetizione: C({n+k-1},{k}) = {C}")
+
+# Esempio: lanciando 3 dadi, quante combinazioni di facce posso ottenere?
+print(f"\n3 dadi indistinguibili: combinazioni con rip. C(6,3) = {math.comb(6+3-1, 3)} = 56")
+
+# Esempio: scegliere 5 supereroi su 12 per la missione
+print(f"\nSquadra di 5 su 12 supereroi: {math.comb(12, 5)} = 792")
+</pre>
+
+        <div class="quiz" data-id="q-comb-1">
+          <h4>Differenza chiave tra disposizione e combinazione?</h4>
+          <ul class="quiz-options">
+            <li>La disposizione lavora solo su numeri, la combinazione su lettere.</li>
+            <li data-correct>Nella disposizione l'ordine conta; nella combinazione no.</li>
+            <li>Le disposizioni richiedono \(k = n\).</li>
+            <li>Le combinazioni richiedono ripetizioni.</li>
+          </ul>
+        </div>
+
+        <div class="quiz" data-id="q-comb-2">
+          <h4>In quanti modi posso scegliere 2 supereroi su 5 per una missione (l'ordine
+            di scelta non conta)?</h4>
+          <ul class="quiz-options">
+            <li>5</li>
+            <li data-correct>10</li>
+            <li>20</li>
+            <li>120</li>
+          </ul>
+          <div class="quiz-explain">
+            Combinazione senza ripetizione: C(5, 2) = 5! / (2!·3!) = 10.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 5. TABLE ============== -->
+      <section id="sec-table">
+        <h2 class="section-title">5. Tabella riassuntiva</h2>
+        <table class="table">
+          <tr><th></th><th>Sequenze (ordinate)</th><th>Insiemi (non ordinati)</th></tr>
+          <tr><th>Senza ripetizione</th>
+              <td><strong>Disposizioni</strong>: \(d_{n,k} = \dfrac{n!}{(n-k)!}\)</td>
+              <td><strong>Combinazioni</strong>: \(c_{n,k} = \binom{n}{k}\)</td></tr>
+          <tr><th>Con ripetizione</th>
+              <td><strong>Disposizioni</strong>: \(D_{n,k} = n^k\)</td>
+              <td><strong>Combinazioni</strong>: \(C_{n,k} = \binom{n+k-1}{k}\)</td></tr>
+        </table>
+
+        <div class="callout tip">
+          <strong>Schema decisionale.</strong> Davanti a un problema, chiediti due cose:
+          <em>(1) l'ordine conta?</em> (sequenza o insieme?) e <em>(2) lo stesso oggetto
+          può comparire più volte?</em> Le due risposte ti danno la riga e la colonna
+          della tabella.
+        </div>
+      </section>
+
+      <!-- ============== 6. PYTHON ============== -->
+      <section id="sec-py">
+        <h2 class="section-title">6. Generare oggetti combinatori in Python</h2>
+        <p>
+          Il modulo standard <code>itertools</code> ha le tre funzioni fondamentali:
+        </p>
+        <ul>
+          <li><code>itertools.product(iterable, repeat=k)</code> → disposizioni con ripetizione (\(n^k\));</li>
+          <li><code>itertools.permutations(iterable, k)</code> → disposizioni senza ripetizione (e permutazioni se k = n);</li>
+          <li><code>itertools.combinations(iterable, k)</code> → combinazioni senza ripetizione;</li>
+          <li><code>itertools.combinations_with_replacement(iterable, k)</code> → combinazioni con ripetizione.</li>
+        </ul>
+
+<pre data-runnable data-title="itertools_demo.py" data-lang="python">import itertools
+
+iterabile = ['A', 'B', 'C']
+
+print("product(repeat=2)              :", list(itertools.product(iterabile, repeat=2)))
+print("permutations(2)                :", list(itertools.permutations(iterabile, 2)))
+print("combinations(2)                :", list(itertools.combinations(iterabile, 2)))
+print("combinations_with_replacement(2):", list(itertools.combinations_with_replacement(iterabile, 2)))
+</pre>
+
+        <p>
+          Conteggi rapidi corrispondenti:
+        </p>
+
+<pre data-runnable data-title="itertools_count.py" data-lang="python">import itertools, math
+
+it = list('ABCDE')   # 5 elementi
+k = 3
+
+print(f"product(it, repeat={k})              → n^k                = {len(list(itertools.product(it, repeat=k)))}, atteso {len(it)**k}")
+print(f"permutations(it, {k})                → n!/(n-k)!          = {len(list(itertools.permutations(it, k)))}, atteso {math.factorial(len(it))//math.factorial(len(it)-k)}")
+print(f"combinations(it, {k})                → C(n,k)             = {len(list(itertools.combinations(it, k)))}, atteso {math.comb(len(it), k)}")
+print(f"combinations_with_replacement(it, {k}) → C(n+k-1,k)        = {len(list(itertools.combinations_with_replacement(it, k)))}, atteso {math.comb(len(it)+k-1, k)}")
+</pre>
+
+        <div class="exercise">
+          <h4>Esercizio 1 — Anagrammi senza scrivere a mano</h4>
+          <p>
+            Implementa <code>anagrammi_unique(parola)</code> che usa
+            <code>itertools.permutations</code> per restituire l'insieme degli
+            anagrammi <em>distinti</em>. Verifica su «ROMA», «PIPPO», «MATEMATICA»
+            confrontando con la formula del coefficiente multinomiale.
+          </p>
+
+<pre data-runnable data-title="esercizio1.py" data-lang="python">import itertools, math
+from collections import Counter
+
+def anagrammi_unique(parola):
+    # Tua soluzione qui
+    pass
+
+def formula(parola):
+    den = 1
+    for k in Counter(parola).values():
+        den *= math.factorial(k)
+    return math.factorial(len(parola)) // den
+
+for parola in ['ROMA', 'PIPPO']:
+    # print(parola, len(anagrammi_unique(parola)), 'vs formula:', formula(parola))
+    pass
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-title="soluzione1.py" data-lang="python">import itertools, math
+from collections import Counter
+
+def anagrammi_unique(parola):
+    return set(''.join(p) for p in itertools.permutations(parola))
+
+def formula(parola):
+    den = 1
+    for k in Counter(parola).values():
+        den *= math.factorial(k)
+    return math.factorial(len(parola)) // den
+
+for parola in ['ROMA', 'PIPPO', 'MATEMATICA']:
+    n = len(anagrammi_unique(parola)) if len(parola) &lt;= 8 else None
+    f = formula(parola)
+    print(f"{parola:&lt;12}  itertools = {n}, formula = {f}")
+# MATEMATICA è troppo grande per enumerare tutti i 10! casi, quindi usiamo solo la formula
+</pre>
+          </div>
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 2 — Tutte le squadre da k</h4>
+          <p>
+            Dato l'elenco dei 6 supereroi sotto, stampa tutte le squadre da 3 e
+            verifica che siano \(\binom{6}{3} = 20\).
+          </p>
+
+<pre data-runnable data-title="esercizio2.py" data-lang="python">eroi = ['Iron Man', 'Hulk', 'Thor', 'Black Widow', 'Hawkeye', 'Captain America']
+# Tua soluzione qui
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-title="soluzione2.py" data-lang="python">import itertools, math
+
+eroi = ['Iron Man', 'Hulk', 'Thor', 'Black Widow', 'Hawkeye', 'Captain America']
+squadre = list(itertools.combinations(eroi, 3))
+for s in squadre:
+    print(s)
+print(f"\nTotale squadre: {len(squadre)} (atteso C(6,3) = {math.comb(6,3)})")
+</pre>
+          </div>
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 3 — Lanci di 3 dadi: combinazioni distinte</h4>
+          <p>
+            Conta in quanti modi differenti possono uscire le facce di 3 dadi
+            considerati indistinguibili (es. <code>(1, 2, 6)</code> = <code>(6, 2, 1)</code>).
+            Verifica che corrisponda a \(C_{6,3} = \binom{8}{3} = 56\).
+          </p>
+
+<pre data-runnable data-title="esercizio3.py" data-lang="python">import itertools, math
+# Tua soluzione qui
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-title="soluzione3.py" data-lang="python">import itertools, math
+
+dadi = list(itertools.combinations_with_replacement(range(1, 7), 3))
+print(f"Combinazioni con ripetizione: {len(dadi)} (atteso {math.comb(8, 3)})")
+print("Prime 10:", dadi[:10])
+</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 7. RIEPILOGO ============== -->
+      <section id="sec-finale">
+        <h2 class="section-title">7. Riepilogo &amp; sfida finale</h2>
+        <ul>
+          <li>Principio fondamentale: prodotto delle scelte indipendenti.</li>
+          <li><strong>Permutazioni</strong>: tutti gli oggetti, ordinati. \(n!\) o \(n!/(n_1!\cdots n_k!)\) per gruppi.</li>
+          <li><strong>Disposizioni</strong>: \(k\) su \(n\), ordinate. Senza rip.: \(n!/(n-k)!\); con rip.: \(n^k\).</li>
+          <li><strong>Combinazioni</strong>: \(k\) su \(n\), non ordinate. Senza rip.: \(\binom{n}{k}\); con rip.: \(\binom{n+k-1}{k}\).</li>
+          <li>In Python: <code>math.factorial</code>, <code>math.comb</code>, <code>itertools</code>.</li>
+        </ul>
+
+        <div class="quiz" data-id="q-final-1">
+          <h4>3 amici scelgono 3 piatti dal menù di 4 portate (ognuno sceglie indipendentemente,
+            anche due dello stesso piatto). Quante scelte totali?</h4>
+          <ul class="quiz-options">
+            <li>4! = 24</li>
+            <li data-correct>4³ = 64 (disposizioni con ripetizione)</li>
+            <li>C(4, 3) = 4</li>
+            <li>3⁴ = 81</li>
+          </ul>
+        </div>
+
+        <div class="quiz" data-id="q-final-2">
+          <h4>Cardinalità dell'insieme delle parti di \(A\) con \(|A| = 5\):</h4>
+          <ul class="quiz-options">
+            <li>5</li>
+            <li>5! = 120</li>
+            <li data-correct>2⁵ = 32 (disposizioni con rip. di {0,1} su 5 posti)</li>
+            <li>C(5, 5) = 1</li>
+          </ul>
+        </div>
+
+        <div class="exercise">
+          <h4>Sfida finale — Squadre fissate</h4>
+          <p>
+            Hai 8 supereroi: 5 con super-forza e 3 con super-velocità. In quanti modi
+            puoi formare una squadra di 4 con esattamente 2 forti e 2 veloci?
+          </p>
+          <p class="hint">
+            Suggerimento: scegli i 2 forti tra i 5 (\(\binom{5}{2}\)) e
+            <em>indipendentemente</em> i 2 veloci tra i 3 (\(\binom{3}{2}\)).
+            Per il principio fondamentale, moltiplica.
+          </p>
+
+<pre data-runnable data-title="sfida.py" data-lang="python">import math
+forti = math.comb(5, 2)
+veloci = math.comb(3, 2)
+print(f"Squadre possibili: {forti} * {veloci} = {forti * veloci}")
+</pre>
+        </div>
+
+        <p style="margin-top: 24px;">
+          Prossima fermata:
+          <strong><a href="lezione-10.html">L10 — Naive Bayes</a></strong>
+          (probabilità condizionate, teorema di Bayes, classificatore naive).
+        </p>
+      </section>
+
+      <footer class="footer">
+        L09 · Calcolo combinatorio — Interactive Learning · Superhero Data Science
+      </footer>
+    </main>
+  </div>
+
+  <script src="assets/app.js" defer></script>
+</body>
+</html>

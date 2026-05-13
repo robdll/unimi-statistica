@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>L08 · Analisi di classificatori — Interactive Learning</title>
+  <meta name="description" content="Matrice di confusione, sensibilità, specificità, curva ROC, AUC e classificatori a soglia." />
+  <link rel="stylesheet" href="assets/styles.css" />
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">SD</div>
+        <div>
+          <strong>Lezione 08</strong>
+          <small>Analisi di classificatori</small>
+        </div>
+      </div>
+
+      <p style="margin: 0 0 8px;">
+        <a href="index.html" style="font-size:0.85rem;">← Torna all'indice</a>
+      </p>
+
+      <h2>In questa lezione</h2>
+      <ul class="toc">
+        <li><a href="#sec-confusione">1. Matrice di confusione</a></li>
+        <li><a href="#sec-sens">2. Sensibilità e specificità</a></li>
+        <li><a href="#sec-casi">3. Casi notevoli (CN, CP, CI, CE, CC)</a></li>
+        <li><a href="#sec-soglia">4. Classificatori a soglia &amp; ROC</a></li>
+        <li><a href="#sec-auc">5. AUC con scikit-learn</a></li>
+        <li><a href="#sec-tree">6. Esempio: albero di decisione</a></li>
+        <li><a href="#sec-finale">7. Riepilogo &amp; sfida finale</a></li>
+      </ul>
+    </aside>
+
+    <main class="main">
+
+      <div class="theme-toggle">
+        <button class="btn ghost" type="button">🌙 Tema scuro</button>
+      </div>
+
+      <section class="hero">
+        <h1>L08 · Analisi di classificatori</h1>
+        <p>
+          Hai un classificatore binario. Quanto è bravo? La risposta non è un singolo
+          numero: bisogna distinguere errori «di tipo I» da errori «di tipo II»,
+          e tarare la <em>soglia</em> di decisione. Strumenti chiave: matrice di
+          confusione, sensibilità/specificità, curva ROC, AUC.
+        </p>
+        <div class="meta">
+          <span>≈ 50–65 minuti</span>
+          <span>9 quiz</span>
+          <span>4 esercizi</span>
+          <span>Include scikit-learn</span>
+        </div>
+        <div class="progress-wrap" title="Progresso quiz">
+          <div class="progress-bar"></div>
+        </div>
+      </section>
+
+      <!-- ============== 1. CONFUSIONE ============== -->
+      <section id="sec-confusione">
+        <h2 class="section-title">1. Matrice di confusione</h2>
+        <p>
+          Per un classificatore <em>binario</em> (positivo / negativo), gli errori si
+          dividono in due famiglie:
+        </p>
+        <ul>
+          <li><strong>Falsi positivi (FP)</strong>: oggetti negativi classificati come positivi (errore di tipo I);</li>
+          <li><strong>Falsi negativi (FN)</strong>: oggetti positivi classificati come negativi (errore di tipo II).</li>
+        </ul>
+        <p>La <strong>matrice di confusione</strong> riassume tutto in 4 numeri:</p>
+
+        <table class="table">
+          <tr><th></th><th>Effettivo: positivo</th><th>Effettivo: negativo</th></tr>
+          <tr><td><strong>Predetto: positivo</strong></td><td>VP (veri positivi)</td><td>FP (falsi positivi)</td></tr>
+          <tr><td><strong>Predetto: negativo</strong></td><td>FN (falsi negativi)</td><td>VN (veri negativi)</td></tr>
+        </table>
+
+        <p>
+          La gravità di un errore dipende dal contesto: in uno screening medico, un FN
+          (malato non scoperto) è di solito molto più grave di un FP. In un
+          recommender system può valere il contrario.
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="confusion.py" data-lang="python">import pandas as pd
+
+# Etichette vere e predette per 10 individui
+y_true = pd.Series([1, 0, 1, 1, 0, 1, 0, 0, 1, 1])
+y_pred = pd.Series([1, 0, 1, 0, 0, 1, 1, 0, 1, 0])
+
+VP = ((y_true == 1) &amp; (y_pred == 1)).sum()
+FN = ((y_true == 1) &amp; (y_pred == 0)).sum()
+FP = ((y_true == 0) &amp; (y_pred == 1)).sum()
+VN = ((y_true == 0) &amp; (y_pred == 0)).sum()
+
+cm = pd.DataFrame([[VP, FP], [FN, VN]],
+                  index=['Predetto positivo', 'Predetto negativo'],
+                  columns=['Eff. positivo', 'Eff. negativo'])
+print(cm)
+</pre>
+      </section>
+
+      <!-- ============== 2. SENS/SPEC ============== -->
+      <section id="sec-sens">
+        <h2 class="section-title">2. Sensibilità e specificità</h2>
+        <p>Dalla matrice di confusione si derivano due indici complementari:</p>
+        <p>\[ \text{sensibilità} = \frac{VP}{VP + FN} \qquad
+              \text{specificità} = \frac{VN}{VN + FP} \]</p>
+        <ul>
+          <li><strong>Sensibilità</strong> (recall, TPR): frazione di positivi correttamente individuati.</li>
+          <li><strong>Specificità</strong> (TNR): frazione di negativi correttamente individuati.</li>
+        </ul>
+        <p>
+          Spesso si rappresenta un classificatore come un <em>punto</em> nel piano
+          \((1 - \text{specificità}, \text{sensibilità})\), cioè
+          <code>(FPR, TPR)</code>. Più il punto è in alto a sinistra, meglio è.
+        </p>
+
+<pre data-runnable data-pandas="true" data-title="sens_spec.py" data-lang="python">import pandas as pd
+
+y_true = pd.Series([1, 0, 1, 1, 0, 1, 0, 0, 1, 1])
+y_pred = pd.Series([1, 0, 1, 0, 0, 1, 1, 0, 1, 0])
+
+VP = ((y_true == 1) &amp; (y_pred == 1)).sum()
+FN = ((y_true == 1) &amp; (y_pred == 0)).sum()
+FP = ((y_true == 0) &amp; (y_pred == 1)).sum()
+VN = ((y_true == 0) &amp; (y_pred == 0)).sum()
+
+sens = VP / (VP + FN)
+spec = VN / (VN + FP)
+print(f"sensibilità = {sens:.2%}")
+print(f"specificità = {spec:.2%}")
+print(f"\nPunto sul piano ROC: ({1 - spec:.2f}, {sens:.2f})")
+</pre>
+
+        <div class="quiz" data-id="q-sens-1">
+          <h4>In uno <strong>screening per una malattia rara</strong>, quale errore è di
+            solito più grave?</h4>
+          <ul class="quiz-options">
+            <li>Falso positivo (sano dichiarato malato).</li>
+            <li data-correct>Falso negativo (malato dichiarato sano).</li>
+            <li>Sono ugualmente gravi.</li>
+            <li>Dipende dalla specificità.</li>
+          </ul>
+          <div class="quiz-explain">
+            Un FN nello screening lascia un malato senza diagnosi: contiene il
+            problema medico, ma rischia conseguenze gravi (epidemia, peggioramento).
+            Per questo si dà priorità all'<em>alta sensibilità</em>.
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 3. CASI NOTEVOLI ============== -->
+      <section id="sec-casi">
+        <h2 class="section-title">3. Casi notevoli sul piano ROC</h2>
+        <p>I quattro vertici del quadrato ROC corrispondono a classificatori speciali:</p>
+        <ul>
+          <li><strong>(0, 0) — CN</strong>: classifica tutto come <em>negativo</em>. Sensibilità 0, specificità 1.</li>
+          <li><strong>(1, 1) — CP</strong>: classifica tutto come <em>positivo</em>. Sensibilità 1, specificità 0.</li>
+          <li><strong>(0, 1) — CI</strong>: <em>classificatore ideale</em>. Sensibilità 1, specificità 1.</li>
+          <li><strong>(1, 0) — CE</strong>: <em>classificatore errato</em> (sbaglia tutto). Sufficient invertirne le predizioni per ottenere CI.</li>
+        </ul>
+        <p>
+          La diagonale rappresenta i <strong>classificatori casuali</strong>: scelgono
+          la classe a caso con una probabilità fissa. Il classificatore
+          \(\mathrm{CC}_{1/2}\) (moneta) sta nel punto (0.5, 0.5).
+        </p>
+
+<pre data-runnable data-matplotlib="true" data-title="roc_corners.py" data-lang="python">import matplotlib.pyplot as plt
+
+plt.figure(figsize=(5, 5))
+plt.plot([0, 1, 1, 0, 0], [0, 0, 1, 1, 0], color='black')
+plt.plot([0, 1, 0, 1], [0, 1, 1, 0], 'o', color='#3b82f6', markersize=10)
+plt.plot([0, 1], [0, 1], '--', color='gray', label='casuale')
+for x, y, lab, dx, dy in [(0, 0, 'CN', -.07, 0),
+                          (1, 1, 'CP', .07, 0),
+                          (0, 1, 'CI', -.07, 0),
+                          (1, 0, 'CE', .07, 0)]:
+    plt.text(x + dx, y + dy, lab, ha='center', va='center', fontsize=12)
+plt.xlim([-.1, 1.15]); plt.ylim([-.1, 1.15])
+plt.xlabel("FPR (1 − specificità)")
+plt.ylabel("TPR (sensibilità)")
+plt.title("Vertici notevoli del piano ROC")
+plt.legend()
+plt.show()
+</pre>
+
+        <div class="quiz" data-id="q-casi-1">
+          <h4>Un classificatore con <em>punto ROC = (0.5, 0.5)</em>:</h4>
+          <ul class="quiz-options">
+            <li>è il migliore possibile.</li>
+            <li data-correct>è equivalente a una scelta casuale.</li>
+            <li>è il peggiore possibile.</li>
+            <li>ha sensibilità nulla.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ============== 4. SOGLIA / ROC ============== -->
+      <section id="sec-soglia">
+        <h2 class="section-title">4. Classificatori a soglia &amp; curva ROC</h2>
+        <p>
+          Molti classificatori producono <em>probabilità</em> (o uno score numerico).
+          Per ottenere una decisione binaria si applica una <strong>soglia</strong>
+          \(\theta\): se lo score è ≥ \(\theta\) ⇒ positivo; altrimenti negativo.
+        </p>
+        <p>
+          Variando \(\theta\) cambiano sensibilità e specificità: la
+          <strong>curva ROC</strong> traccia tutti i punti \((1 - \text{spec}, \text{sens})\)
+          al variare di \(\theta\), da \(\theta = 0\) (tutti positivi → angolo (1, 1))
+          a \(\theta = +\infty\) (tutti negativi → angolo (0, 0)).
+        </p>
+
+<pre data-runnable data-pandas="true" data-matplotlib="true" data-title="roc_manual.py" data-lang="python">import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+# 5 esempi: y vere e probabilità predette
+y    = np.array([1, 0, 1, 1, 0])
+prob = np.array([0.7, 0.4, 0.8, 0.7, 0.3])
+
+def fpr_tpr(y, prob, thr):
+    pred = (prob &gt;= thr).astype(int)
+    VP = ((y == 1) &amp; (pred == 1)).sum()
+    FN = ((y == 1) &amp; (pred == 0)).sum()
+    FP = ((y == 0) &amp; (pred == 1)).sum()
+    VN = ((y == 0) &amp; (pred == 0)).sum()
+    return FP / (FP + VN) if (FP + VN) else 0, VP / (VP + FN) if (VP + FN) else 0
+
+thresholds = sorted(set(prob), reverse=True) + [0]
+points = [(0, 0)] + [fpr_tpr(y, prob, t) for t in thresholds]
+points = sorted(set(points))
+
+xs = [p[0] for p in points]
+ys = [p[1] for p in points]
+plt.plot(xs, ys, marker='o')
+plt.plot([0, 1], [0, 1], '--', color='gray')
+plt.xlabel("FPR")
+plt.ylabel("TPR")
+plt.title("Curva ROC (5 esempi)")
+plt.show()
+</pre>
+
+        <div class="callout info">
+          <strong>Caratteristiche di una curva ROC.</strong> Parte da (0, 0) e arriva
+          a (1, 1) (per i due estremi della soglia), è <em>monotona non decrescente</em>
+          (più rilassi la soglia, più positivi marchi) e più si avvicina all'angolo
+          superiore sinistro, meglio è.
+        </div>
+      </section>
+
+      <!-- ============== 5. AUC ============== -->
+      <section id="sec-auc">
+        <h2 class="section-title">5. AUC con scikit-learn</h2>
+        <p>
+          L'<strong>AUC</strong> (Area Under the ROC Curve) sintetizza la curva in un
+          numero in <code>[0, 1]</code>:
+        </p>
+        <ul>
+          <li><code>AUC = 1</code>: classificatore ideale;</li>
+          <li><code>AUC = 0.5</code>: equivalente al caso (scelta casuale);</li>
+          <li><code>AUC &lt; 0.5</code>: invertendo le predizioni si ottiene un classificatore migliore.</li>
+        </ul>
+        <p>
+          Scikit-learn fornisce <code>metrics.roc_curve</code> e
+          <code>metrics.auc</code> per non doverli ricalcolare a mano.
+        </p>
+
+<pre data-runnable data-pandas="true" data-sklearn="true" data-matplotlib="true" data-title="roc_sklearn.py" data-lang="python">import numpy as np
+import matplotlib.pyplot as plt
+from sklearn import metrics
+
+# Caso 1: probabilità ben "ordinate"
+y1    = [1, 0, 1, 1, 0]
+prob1 = [.7, .4, .8, .7, .3]
+fpr, tpr, _ = metrics.roc_curve(y1, prob1)
+auc1 = metrics.auc(fpr, tpr)
+
+# Caso 2: probabilità "sbagliate"
+y2    = [1, 0, 1, 1, 0]
+prob2 = [.2, .4, .8, .7, .7]
+fpr2, tpr2, _ = metrics.roc_curve(y2, prob2)
+auc2 = metrics.auc(fpr2, tpr2)
+
+plt.plot(fpr,  tpr,  marker='o', label=f'caso 1, AUC={auc1:.2f}')
+plt.plot(fpr2, tpr2, marker='o', label=f'caso 2, AUC={auc2:.2f}')
+plt.plot([0, 1], [0, 1], '--', color='gray')
+plt.xlabel("FPR"); plt.ylabel("TPR")
+plt.title("Curve ROC a confronto")
+plt.legend()
+plt.show()
+
+print(f"AUC caso 1: {auc1:.3f}")
+print(f"AUC caso 2: {auc2:.3f}")
+</pre>
+
+        <div class="quiz" data-id="q-auc-1">
+          <h4>Un classificatore con AUC = 0.97 è:</h4>
+          <ul class="quiz-options">
+            <li>poco più di una scelta casuale.</li>
+            <li>quasi identico al classificatore costante CP.</li>
+            <li data-correct>vicino al comportamento ideale.</li>
+            <li>matematicamente impossibile.</li>
+          </ul>
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 1 — Calcola sensibilità, specificità, AUC</h4>
+          <p>
+            Date le etichette vere <code>y</code> e gli score <code>prob</code>: (a)
+            disegna la curva ROC; (b) calcola l'AUC; (c) calcola sensibilità e
+            specificità per <code>thr = 0.5</code>.
+          </p>
+
+<pre data-runnable data-pandas="true" data-sklearn="true" data-matplotlib="true" data-title="esercizio1.py" data-lang="python">import numpy as np
+import matplotlib.pyplot as plt
+from sklearn import metrics
+
+y    = [1, 0, 1, 1, 0, 0, 1, 1, 0, 1]
+prob = [.92, .31, .88, .42, .55, .12, .73, .65, .29, .81]
+
+# Tua soluzione qui
+</pre>
+
+          <div class="solution">
+
+<pre data-runnable data-pandas="true" data-sklearn="true" data-matplotlib="true" data-title="soluzione1.py" data-lang="python">import numpy as np
+import matplotlib.pyplot as plt
+from sklearn import metrics
+
+y    = np.array([1, 0, 1, 1, 0, 0, 1, 1, 0, 1])
+prob = np.array([.92, .31, .88, .42, .55, .12, .73, .65, .29, .81])
+
+fpr, tpr, _ = metrics.roc_curve(y, prob)
+auc = metrics.auc(fpr, tpr)
+plt.plot(fpr, tpr, marker='o')
+plt.plot([0, 1], [0, 1], '--', color='gray')
+plt.title(f"ROC, AUC = {auc:.3f}")
+plt.show()
+
+# Soglia 0.5
+pred = (prob &gt;= 0.5).astype(int)
+VP = ((y==1) &amp; (pred==1)).sum()
+FN = ((y==1) &amp; (pred==0)).sum()
+FP = ((y==0) &amp; (pred==1)).sum()
+VN = ((y==0) &amp; (pred==0)).sum()
+print(f"sens = {VP/(VP+FN):.2%}, spec = {VN/(VN+FP):.2%}, AUC = {auc:.3f}")
+</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== 6. ALBERO + ROC ============== -->
+      <section id="sec-tree">
+        <h2 class="section-title">6. Esempio completo: albero di decisione + ROC</h2>
+        <p>
+          Mettiamo tutto insieme. Costruiamo un albero per riconoscere se un
+          supereroe è Marvel o no, lo addestriamo su una parte dei dati e tracciamo la
+          ROC sul resto. Importante: <em>per una valutazione onesta servono dati di
+          test mai visti dal modello</em>.
+        </p>
+
+<pre data-runnable data-pandas="true" data-sklearn="true" data-matplotlib="true" data-title="tree_roc.py" data-lang="python">import pandas as pd, io
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn import tree, metrics
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+
+CSV = """\
+Name;Publisher;Height;Weight;Gender;Eye color;Strength
+Iron Man;Marvel Comics;198.51;191.85;M;Blue;85
+Hulk;Marvel Comics;244.50;630.32;M;Green;100
+Spider-Man;Marvel Comics;177.95;72.97;M;Hazel;55
+Wolverine;Marvel Comics;160.70;135.21;M;Blue;75
+Storm;Marvel Comics;180.39;58.96;F;Blue;30
+Thor;Marvel Comics;198.10;291.45;M;Blue;100
+Black Widow;Marvel Comics;170.30;58.39;F;Green;13
+Captain America;Marvel Comics;188.06;108.10;M;Blue;19
+Magneto;Marvel Comics;188.10;87.55;M;Blue;55
+Doctor Strange;Marvel Comics;187.96;81.46;M;Grey;10
+Vision;Marvel Comics;190.20;135.27;M;Yellow;75
+Hawkeye;Marvel Comics;191.21;104.92;M;Blue;14
+Daredevil;Marvel Comics;185.81;90.00;M;Blue;19
+Black Panther;Marvel Comics;180.34;81.26;M;Brown;16
+Mystique;Marvel Comics;177.53;55.40;F;Yellow;14
+Rogue;Marvel Comics;172.99;55.39;F;Green;65
+Jean Grey;Marvel Comics;167.61;52.65;F;Green;20
+Venom;Marvel Comics;179.30;162.46;M;Blue;85
+Batman;DC Comics;188.04;95.78;M;Blue;26
+Superman;DC Comics;191.10;107.62;M;Blue;100
+Wonder Woman;DC Comics;183.13;74.74;F;Blue;100
+Aquaman;DC Comics;185.71;146.96;M;Blue;85
+Flash;DC Comics;185.36;90.74;M;Green;26
+Cyborg;DC Comics;185.10;176.32;M;Brown;80
+Joker;DC Comics;185.81;79.85;M;Green;10
+Catwoman;DC Comics;170.58;57.34;F;Green;14
+Robin;DC Comics;167.64;79.13;M;Blue;14
+Penguin;DC Comics;167.91;79.43;M;Blue;9
+Lex Luthor;DC Comics;188.34;94.21;M;Green;10
+Green Lantern;DC Comics;185.81;90.10;M;Blue;75
+"""
+df = pd.read_csv(io.StringIO(CSV), sep=';', index_col='Name')
+
+# Codifico le categoriche
+for col in ['Gender', 'Eye color']:
+    df[col] = LabelEncoder().fit_transform(df[col])
+
+X = df.drop(columns='Publisher')
+y = (df['Publisher'] == 'Marvel Comics').astype(int)
+
+# split train / test
+X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.4, random_state=0,
+                                          stratify=y)
+
+clf = tree.DecisionTreeClassifier(max_depth=4, random_state=0)
+clf.fit(X_tr, y_tr)
+
+prob_te = clf.predict_proba(X_te)[:, 1]
+
+fpr, tpr, _ = metrics.roc_curve(y_te, prob_te)
+auc = metrics.auc(fpr, tpr)
+
+plt.plot(fpr, tpr, marker='o', label=f"AUC = {auc:.2f}")
+plt.plot([0, 1], [0, 1], '--', color='gray')
+plt.xlabel("FPR"); plt.ylabel("TPR")
+plt.title("Albero di decisione su test set")
+plt.legend()
+plt.show()
+
+# matrice di confusione (con thr 0.5)
+pred_te = (prob_te &gt;= 0.5).astype(int)
+cm = pd.DataFrame(metrics.confusion_matrix(y_te, pred_te),
+                  index=['Eff. non-Marvel', 'Eff. Marvel'],
+                  columns=['Pred. non-Marvel', 'Pred. Marvel'])
+print(cm)
+</pre>
+
+        <div class="callout warning">
+          <strong>Train ≠ Test.</strong> Valutare sul training set è quasi sempre
+          ingannevole: l'albero può aver semplicemente <em>memorizzato</em> i dati.
+          La frazione di test (e tecniche più sofisticate come la cross-validation)
+          servono a misurare la <em>generalizzazione</em>.
+        </div>
+
+        <div class="exercise">
+          <h4>Esercizio 2 — Sperimenta con la profondità dell'albero</h4>
+          <p>
+            Modifica la cella precedente per provare valori diversi di
+            <code>max_depth</code> (2, 4, 8, None). Cosa succede all'AUC sul test set?
+            E sul training set?
+          </p>
+        </div>
+      </section>
+
+      <!-- ============== 7. RIEPILOGO ============== -->
+      <section id="sec-finale">
+        <h2 class="section-title">7. Riepilogo &amp; sfida finale</h2>
+        <ul>
+          <li>La <strong>matrice di confusione</strong> separa errori in FP e FN: pesi diversi a seconda del contesto.</li>
+          <li><strong>Sensibilità</strong> = VP/(VP+FN); <strong>specificità</strong> = VN/(VN+FP).</li>
+          <li>Punto sul piano ROC = <code>(1 − specificità, sensibilità)</code>: meglio in alto a sinistra.</li>
+          <li>I 4 vertici corrispondono a CN, CP, CI, CE; la diagonale ai classificatori casuali.</li>
+          <li>La <strong>curva ROC</strong> si ottiene variando la soglia di un classificatore probabilistico.</li>
+          <li>L'<strong>AUC</strong> riassume la curva: 1 = ideale, 0.5 = casuale.</li>
+          <li>Valutazione onesta richiede <strong>train/test split</strong> (o cross-validation).</li>
+        </ul>
+
+        <div class="quiz" data-id="q-final-1">
+          <h4>Un classificatore con AUC = 0.5 sul test set è:</h4>
+          <ul class="quiz-options">
+            <li>perfetto.</li>
+            <li>perfettamente errato (basta invertire le predizioni).</li>
+            <li data-correct>indistinguibile da una scelta casuale.</li>
+            <li>impossibile.</li>
+          </ul>
+        </div>
+
+        <div class="quiz" data-id="q-final-2">
+          <h4>Vuoi minimizzare i <strong>falsi negativi</strong> in uno screening: come
+            taro la soglia su una probabilità predetta?</h4>
+          <ul class="quiz-options">
+            <li>Alta (es. 0.9).</li>
+            <li data-correct>Bassa (es. 0.2): più individui marcati positivi, FN ↓ ma FP ↑.</li>
+            <li>Esattamente 0.5.</li>
+            <li>La soglia non influenza FN.</li>
+          </ul>
+        </div>
+
+        <div class="exercise">
+          <h4>Sfida finale — Confronta due classificatori sull'AUC</h4>
+          <p>
+            Sul dataset della cella «albero + ROC», sostituisci il
+            <code>DecisionTreeClassifier</code> con un
+            <code>LogisticRegression</code>. Stampa le AUC dei due modelli sullo
+            stesso test set. Quale vince?
+          </p>
+        </div>
+
+        <p style="margin-top: 24px;">
+          Prossima fermata:
+          <strong><a href="lezione-09.html">L09 — Calcolo combinatorio</a></strong>
+          (permutazioni, disposizioni, combinazioni).
+        </p>
+      </section>
+
+      <footer class="footer">
+        L08 · Analisi di classificatori — Interactive Learning · Superhero Data Science
+      </footer>
+    </main>
+  </div>
+
+  <script src="assets/app.js" defer></script>
+</body>
+</html>
